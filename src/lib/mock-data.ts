@@ -43,15 +43,12 @@ export const tendenciaMock = Array.from({ length: 8 }).map((_, i) => ({
 }));
 
 export const preguntasLey1581 = [
-  "¿Cuenta la empresa con una política formal de tratamiento de datos personales?",
-  "¿Se ha designado un oficial de protección de datos?",
-  "¿Existe un registro de bases de datos ante la SIC?",
-  "¿Se solicita autorización expresa al titular antes de tratar sus datos?",
-  "¿Se cuenta con procedimientos para atender consultas y reclamos?",
-  "¿Se realizan capacitaciones periódicas al personal en protección de datos?",
-  "¿Se aplican medidas de seguridad técnicas y administrativas?",
-  "¿Se gestionan los incidentes de seguridad documentadamente?",
-  "¿Se firman acuerdos de transferencia con encargados de tratamiento?",
-  "¿Se realizan auditorías internas de cumplimiento de la Ley 1581?",
-  "¿Se conservan evidencias de las autorizaciones obtenidas?",
+  "¿La empresa obtiene autorización para tratar datos?",
+  "¿Cuenta con una política de tratamiento publicada?",
+  "¿Permite a los titulares ejercer sus derechos?",
+  "¿Tiene procedimientos para consultas y reclamos?",
+  "¿Aplica medidas de seguridad para proteger los datos?",
+  "¿Capacita a su personal en protección de datos?",
+  "¿Conoce y cumple las obligaciones legales sobre tratamiento de datos?",
+  "¿Realiza seguimiento y mejora continua de sus prácticas de protección de datos?",
 ];

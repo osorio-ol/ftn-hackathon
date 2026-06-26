@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/lib/auth";
+import { canAccessRoute, roleLabel } from "@/lib/permissions";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -12,7 +13,8 @@ export const Route = createFileRoute("/_authenticated")({
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/empresas": "Empresas",
-  "/cuestionario": "Cuestionario Ley 1581",
+  "/cuestionario": "Autodiagnóstico Ley 1581",
+  "/historial": "Historial de evaluaciones",
   "/reportes": "Reportes",
 };
 
@@ -24,6 +26,12 @@ function AuthLayout() {
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login", replace: true });
   }, [loading, user, navigate]);
+
+  useEffect(() => {
+    if (user && !canAccessRoute(user.role, pathname)) {
+      navigate({ to: "/dashboard", replace: true });
+    }
+  }, [user, pathname, navigate]);
 
   if (loading || !user) {
     return (
@@ -41,8 +49,9 @@ function AuthLayout() {
           <header className="h-14 flex items-center gap-3 border-b bg-background px-4">
             <SidebarTrigger />
             <h1 className="text-sm font-semibold">{titles[pathname] ?? "CAVALTEC"}</h1>
-            <div className="ml-auto text-xs text-muted-foreground">
-              {user.email} · <span className="capitalize">{user.role}</span>
+            <div className="ml-auto text-xs text-muted-foreground hidden sm:block">
+              {user.company_name ? `${user.company_name} · ` : ""}
+              {user.email} · {roleLabel(user.role)}
             </div>
           </header>
           <main className="flex-1 p-4 md:p-6">

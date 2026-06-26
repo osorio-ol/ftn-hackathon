@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bar,
@@ -19,30 +19,40 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, TrendingUp, Building2, ClipboardCheck, ShieldAlert } from "lucide-react";
+import { AlertCircle, TrendingUp, Building2, ClipboardCheck, ShieldAlert, ArrowRight } from "lucide-react";
 import { evaluacionesMock, tendenciaMock, empresasMock } from "@/lib/mock-data";
+import { useAuth } from "@/lib/auth";
+import { isCompanyUser, type Role } from "@/lib/permissions";
+import { getHistorial } from "@/lib/history";
+import { ComplianceGauge } from "@/components/diagnostico/compliance-gauge";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-async function fetchDashboard() {
-  await new Promise((r) => setTimeout(r, 700));
-  if (Math.random() < 0.05) throw new Error("Error simulado de red");
-  const promedio = Math.round(
-    evaluacionesMock.reduce((a, b) => a + b.puntaje, 0) / evaluacionesMock.length
-  );
-  const cumple = evaluacionesMock.filter((e) => e.estado === "Cumple").length;
-  const parcial = evaluacionesMock.filter((e) => e.estado === "Parcial").length;
-  const noCumple = evaluacionesMock.filter((e) => e.estado === "No cumple").length;
+async function fetchDashboard(companyId?: number, role?: Role) {
+  await new Promise((r) => setTimeout(r, 500));
+  const local = getHistorial(role && isCompanyUser(role) ? companyId : undefined);
+  const allEvals =
+    role && isCompanyUser(role)
+      ? local
+      : [...local, ...evaluacionesMock.map((e) => ({ puntaje: e.puntaje, estado: e.estado, empresa: e.empresa }))];
+
+  const promedio = allEvals.length
+    ? Math.round(allEvals.reduce((a, b) => a + b.puntaje, 0) / allEvals.length)
+    : 0;
+  const cumple = allEvals.filter((e) => e.estado === "Cumple").length;
+  const parcial = allEvals.filter((e) => e.estado === "Parcial").length;
+  const noCumple = allEvals.filter((e) => e.estado === "No cumple").length;
   return {
     promedio,
-    totalEmpresas: empresasMock.length,
-    totalEvaluaciones: evaluacionesMock.length,
+    totalEmpresas: role && isCompanyUser(role) ? 1 : empresasMock.length,
+    totalEvaluaciones: allEvals.length,
     pendientes: noCumple,
+    ultimoPuntaje: local[0]?.puntaje,
     distribucion: [
       { name: "Cumple", value: cumple, color: "var(--color-chart-2)" },
-      { name: "Parcial", value: parcial, color: "var(--color-chart-4)" },
+      { name: "Parcial", value: parcial, color: "var(--color-chart-3)" },
       { name: "No cumple", value: noCumple, color: "var(--color-chart-5)" },
     ],
     porEmpresa: empresasMock.map((e) => ({
@@ -57,9 +67,10 @@ async function fetchDashboard() {
 }
 
 function Dashboard() {
+  const { user } = useAuth();
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: fetchDashboard,
+    queryKey: ["dashboard", user?.company_id, user?.role],
+    queryFn: () => fetchDashboard(user?.company_id, user?.role),
     retry: 1,
   });
 
@@ -104,6 +115,27 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {user && isCompanyUser(user.role) && (
+        <Card className="border-primary/20">
+          <CardContent className="flex flex-col sm:flex-row items-center gap-6 py-6">
+            <div className="flex-1 space-y-2">
+              <h2 className="text-lg font-semibold">Bienvenido, {user.company_name}</h2>
+              <p className="text-sm text-muted-foreground">
+                Realiza el autodiagnóstico de cumplimiento Ley 1581 en fase de diseño y obtén
+                recomendaciones personalizadas con IA.
+              </p>
+              <Button asChild size="sm">
+                <Link to="/cuestionario">
+                  Iniciar autodiagnóstico
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+            {data.ultimoPuntaje != null && <ComplianceGauge value={data.ultimoPuntaje} size={160} />}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-4">
         {stats.map((s) => (
           <Card key={s.label}>
@@ -123,7 +155,10 @@ function Dashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Tendencia de cumplimiento</CardTitle>
-          <CardDescription>Puntaje promedio mensual {isFetching && "(actualizando…)"}</CardDescription>
+          <CardDescription>
+            {user && isCompanyUser(user.role) ? "Tu progreso de cumplimiento" : "Puntaje promedio mensual"}
+            {isFetching && " (actualizando…)"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
@@ -141,7 +176,7 @@ function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Puntaje por empresa</CardTitle>
+            <CardTitle>{user && isCompanyUser(user.role) ? "Tu puntaje" : "Puntaje por empresa"}</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
             <ResponsiveContainer width="100%" height="100%">
