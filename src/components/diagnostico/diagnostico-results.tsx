@@ -6,6 +6,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import type { RecommendationReport } from "@/lib/api/assessments";
 
+import { bloquesDiagnostico, type BloqueId } from "@/lib/diagnostico";
+
 type DiagnosticoResultsProps = {
   empresa: string;
   responsable: string;
@@ -15,6 +17,7 @@ type DiagnosticoResultsProps = {
   totalPreguntas: number;
   brechas: string[];
   recomendaciones: string[];
+  porBloque?: Record<BloqueId, number>;
   aiReport?: RecommendationReport | null;
   aiError?: string | null;
   onDownload: () => void;
@@ -50,6 +53,7 @@ export function DiagnosticoResults({
   totalPreguntas,
   brechas,
   recomendaciones,
+  porBloque,
   aiReport,
   aiError,
   onDownload,
@@ -88,6 +92,20 @@ export function DiagnosticoResults({
           </div>
         </div>
       </div>
+
+      {porBloque && (
+        <div className="grid gap-3 sm:grid-cols-3">
+          {bloquesDiagnostico.map((bloque) => (
+            <div key={bloque.id} className="rounded-xl border bg-card p-4 text-center">
+              <p className="text-xs text-muted-foreground">{bloque.titulo}</p>
+              <p className="mt-1 text-2xl font-bold tabular-nums">
+                {porBloque[bloque.id]}
+                <span className="text-sm font-normal text-muted-foreground">/{bloque.pesoMax}%</span>
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {aiError && (
         <Alert variant="destructive" className="rounded-xl">

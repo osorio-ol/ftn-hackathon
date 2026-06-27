@@ -9,7 +9,6 @@ type DiagnosticoIntroProps = {
   onResponsableChange: (value: string) => void;
   responsableError?: string;
   onStart: () => void;
-  totalPreguntas: number;
 };
 
 export function DiagnosticoIntro({
@@ -18,7 +17,6 @@ export function DiagnosticoIntro({
   onResponsableChange,
   responsableError,
   onStart,
-  totalPreguntas,
 }: DiagnosticoIntroProps) {
   return (
     <div className="animate-in fade-in duration-500 max-w-lg mx-auto text-center space-y-8 py-4">
@@ -29,9 +27,9 @@ export function DiagnosticoIntro({
         <div className="space-y-2">
           <h2 className="text-2xl font-bold">Autodiagnóstico Ley 1581</h2>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Evalúa el cumplimiento de tu organización en protección de datos personales.
-            Son solo <strong>{totalPreguntas} preguntas</strong> con respuesta Sí o No — te tomará unos
-            minutos.
+            Evalúa el cumplimiento en <strong>3 bloques</strong> con hasta{" "}
+            <strong>11 preguntas</strong>. Algunas solo aparecen según tus respuestas (por ejemplo, si no
+            tienes política de datos, se omiten las preguntas 2 a 5).
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-2 text-xs">

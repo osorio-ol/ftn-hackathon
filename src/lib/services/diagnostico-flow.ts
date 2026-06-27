@@ -11,6 +11,7 @@ import type { User } from "@/lib/auth";
 import {
   calcularPuntaje,
   generarRecomendaciones,
+  type BloqueId,
   type RespuestaValor,
 } from "@/lib/diagnostico";
 
@@ -22,6 +23,7 @@ export type DiagnosticoFlowResult = {
   recomendaciones: string[];
   respuestasSi: number;
   totalPreguntas: number;
+  porBloque: Record<BloqueId, number>;
   aiReport: RecommendationReport | null;
   aiError: string | null;
 };
@@ -64,7 +66,13 @@ export async function submitDiagnosticoFlow(
 
   try {
     onPhaseChange?.("loading-report");
-    const recommendation = await generateRecommendationsFlow(assessmentId);
+    const recommendation = await generateRecommendationsFlow(assessmentId, {
+      puntaje: calc.puntaje,
+      estado: calc.estado,
+      brechas: calc.brechas,
+      recomendaciones: fallbackRecomendaciones,
+      empresa: user.company_name ?? undefined,
+    });
     aiReport = recommendation.report;
     const fromAi = reportToRecomendaciones(aiReport);
     const fromAiBrechas = reportToBrechas(aiReport);
@@ -85,6 +93,7 @@ export async function submitDiagnosticoFlow(
     recomendaciones,
     respuestasSi: calc.respuestasSi,
     totalPreguntas: calc.totalPreguntas,
+    porBloque: calc.porBloque,
     aiReport,
     aiError,
   };

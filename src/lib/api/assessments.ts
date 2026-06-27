@@ -4,8 +4,7 @@ import type { User } from "@/lib/auth";
 
 import type { RespuestaValor } from "@/lib/diagnostico";
 
-import { preguntasDiagnostico } from "@/lib/diagnostico";
-
+import { getPreguntasActivas } from "@/lib/diagnostico";
 
 
 export type AssessmentAnswer = {
@@ -236,12 +235,9 @@ export function buildAssessmentPayload(
 
 ): CreateAssessmentPayload {
 
-  const answers = preguntasDiagnostico.map((p) => ({
-
+  const answers = getPreguntasActivas(respuestas).map((p) => ({
     question_number: p.id,
-
     answer: respuestas[p.id] === "si",
-
   }));
 
 
@@ -355,7 +351,19 @@ export async function getRecommendationOptional(
 
   try {
 
-    return await getRecommendation(assessmentId);
+    const rec = await apiRequest<RecommendationOut | null>(
+      `/api/v1/recommendations/${assessmentId}/optional`
+    );
+
+    if (!rec) return null;
+
+    return {
+
+      ...rec,
+
+      report: normalizeRecommendationReport(rec.report) ?? rec.report,
+
+    };
 
   } catch (err) {
 

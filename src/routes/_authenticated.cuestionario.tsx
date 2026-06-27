@@ -1,13 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/client";
-import { preguntasDiagnostico, type RespuestaValor } from "@/lib/diagnostico";
+import {
+  clearRespuestasDependientes,
+  getPreguntasActivas,
+  preguntasDiagnostico,
+  type RespuestaValor,
+} from "@/lib/diagnostico";
 import { saveEvaluacion, downloadReporte } from "@/lib/history";
 import {
   submitDiagnosticoFlow,
@@ -20,6 +25,10 @@ import { DiagnosticoProgress } from "@/components/diagnostico/diagnostico-progre
 import { DiagnosticoResults } from "@/components/diagnostico/diagnostico-results";
 import { QuestionCard } from "@/components/diagnostico/question-card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
+
+const TOTAL_PREGUNTAS_MODELO = preguntasDiagnostico.length;
 
 export const Route = createFileRoute("/_authenticated/cuestionario")({
   component: CuestionarioPage,
@@ -27,7 +36,6 @@ export const Route = createFileRoute("/_authenticated/cuestionario")({
 
 const schema = z.object({
   responsable: z.string().trim().min(2, "Ingresa tu nombre"),
-  respuestas: z.record(z.string(), z.enum(["si", "no"]).optional()),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -35,17 +43,17 @@ type FormValues = z.infer<typeof schema>;
 function CuestionarioPage() {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
+  const [respuestas, setRespuestas] = useState<Record<number, RespuestaValor>>({});
   const [iaActiva, setIaActiva] = useState(true);
   const [loadingPhase, setLoadingPhase] = useState<DiagnosticoPhase | null>(null);
-  const [resultado, setResultado] = useState<(DiagnosticoFlowResult & { historialId: string; empresa: string; responsable: string }) | null>(null);
+  const [resultado, setResultado] = useState<
+    (DiagnosticoFlowResult & { historialId: string; empresa: string; responsable: string }) | null
+  >(null);
 
   const empresa = user?.company_name ?? "Empresa";
-  const totalPreguntas = preguntasDiagnostico.length;
-  const totalSteps = totalPreguntas + 1;
 
   const {
     handleSubmit,
-    control,
     watch,
     setValue,
     reset,
@@ -54,19 +62,33 @@ function CuestionarioPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       responsable: user?.name ?? "",
-      respuestas: {},
     },
   });
 
-  const respuestasWatch = watch("respuestas");
   const responsableWatch = watch("responsable");
 
-  const answeredCount = useMemo(
-    () => preguntasDiagnostico.filter((p) => respuestasWatch?.[String(p.id)]).length,
-    [respuestasWatch]
+  const respuestasMap = respuestas;
+
+  const preguntasActivas = useMemo(
+    () => getPreguntasActivas(respuestasMap),
+    [respuestasMap]
   );
 
-  const currentPregunta = step > 0 ? preguntasDiagnostico[step - 1] : null;
+  const totalPreguntas = preguntasActivas.length;
+
+  const answeredCount = useMemo(
+    () => preguntasActivas.filter((p) => respuestasMap[p.id]).length,
+    [preguntasActivas, respuestasMap]
+  );
+
+  const currentPregunta = step > 0 && step <= totalPreguntas ? preguntasActivas[step - 1] : null;
+
+  /** Evita pantalla vacía si el flujo se acorta (p. ej. P1 = No). */
+  useEffect(() => {
+    if (step > 0 && totalPreguntas > 0 && step > totalPreguntas) {
+      setStep(totalPreguntas);
+    }
+  }, [step, totalPreguntas]);
 
   const handleStart = () => {
     if (!responsableWatch || responsableWatch.trim().length < 2) {
@@ -78,8 +100,8 @@ function CuestionarioPage() {
 
   const goNext = () => {
     if (step > 0 && step <= totalPreguntas) {
-      const pregunta = preguntasDiagnostico[step - 1];
-      if (!respuestasWatch?.[String(pregunta.id)]) {
+      const pregunta = preguntasActivas[step - 1];
+      if (!respuestasMap[pregunta.id]) {
         toast.error("Selecciona Sí o No para continuar");
         return;
       }
@@ -92,10 +114,36 @@ function CuestionarioPage() {
   };
 
   const handleAnswer = (preguntaId: number, value: RespuestaValor) => {
-    setValue(`respuestas.${preguntaId}`, value, { shouldValidate: true });
-    if (step < totalPreguntas) {
-      setTimeout(() => setStep((s) => (s === step ? s + 1 : s)), 350);
+    const updated = clearRespuestasDependientes(respuestasMap, preguntaId, value);
+    setRespuestas(updated);
+
+    if (preguntaId === 1 && value === "no") {
+      toast.info("Sin política de datos", {
+        description:
+          "Según la metodología, no se aplican las preguntas 2 a 5. Continuarás con privacidad y gobernanza.",
+      });
     }
+
+    const activeAfter = getPreguntasActivas(updated);
+    const currentIdx = activeAfter.findIndex((p) => p.id === preguntaId);
+
+    setTimeout(() => {
+      if (preguntaId === 1 && value === "no") {
+        const q6Idx = activeAfter.findIndex((p) => p.id === 6);
+        setStep(q6Idx >= 0 ? q6Idx + 1 : 1);
+        return;
+      }
+      if (preguntaId === 10 && value === "no" && step > activeAfter.length) {
+        setStep(activeAfter.length);
+        return;
+      }
+      const nextStep = currentIdx + 2;
+      if (currentIdx >= 0 && currentIdx < activeAfter.length - 1) {
+        setStep(nextStep);
+      } else if (step > activeAfter.length) {
+        setStep(Math.max(1, activeAfter.length));
+      }
+    }, 350);
   };
 
   const onSubmit = async (values: FormValues) => {
@@ -104,16 +152,13 @@ function CuestionarioPage() {
       return;
     }
 
-    const sinResponder = preguntasDiagnostico.filter((p) => !values.respuestas?.[String(p.id)]);
+    const activas = getPreguntasActivas(respuestas);
+    const sinResponder = activas.filter((p) => !respuestas[p.id]);
     if (sinResponder.length > 0) {
       toast.error(`Faltan ${sinResponder.length} preguntas por responder`);
-      setStep(sinResponder[0].id);
+      const idx = activas.findIndex((p) => p.id === sinResponder[0].id);
+      setStep(idx + 1);
       return;
-    }
-
-    const map: Record<number, RespuestaValor | undefined> = {};
-    for (const [k, v] of Object.entries(values.respuestas ?? {})) {
-      if (v) map[Number(k)] = v;
     }
 
     setLoadingPhase("saving");
@@ -121,7 +166,7 @@ function CuestionarioPage() {
       const flowResult = await submitDiagnosticoFlow({
         user,
         responsable: values.responsable,
-        respuestas: map,
+        respuestas,
         onPhaseChange: setLoadingPhase,
       });
 
@@ -132,7 +177,11 @@ function CuestionarioPage() {
         estado: flowResult.estado,
         brechas: flowResult.brechas,
         recomendaciones: flowResult.recomendaciones,
-        porBloque: { cumplimiento: flowResult.puntaje },
+        porBloque: {
+          politica: flowResult.porBloque.politica,
+          privacidad: flowResult.porBloque.privacidad,
+          gobernanza: flowResult.porBloque.gobernanza,
+        },
         companyId: user.company_id,
         assessmentId: flowResult.assessmentId,
         aiReport: flowResult.aiReport ?? undefined,
@@ -174,6 +223,7 @@ function CuestionarioPage() {
         totalPreguntas={resultado.totalPreguntas}
         brechas={resultado.brechas}
         recomendaciones={resultado.recomendaciones}
+        porBloque={resultado.porBloque}
         aiReport={resultado.aiReport}
         aiError={resultado.aiError}
         onDownload={() =>
@@ -186,7 +236,11 @@ function CuestionarioPage() {
             estado: resultado.estado,
             brechas: resultado.brechas,
             recomendaciones: resultado.recomendaciones,
-            porBloque: { cumplimiento: resultado.puntaje },
+            porBloque: {
+              politica: resultado.porBloque.politica,
+              privacidad: resultado.porBloque.privacidad,
+              gobernanza: resultado.porBloque.gobernanza,
+            },
             companyId: user?.company_id,
             assessmentId: resultado.assessmentId,
             aiReport: resultado.aiReport ?? undefined,
@@ -195,6 +249,7 @@ function CuestionarioPage() {
         onReset={() => {
           setResultado(null);
           setStep(0);
+          setRespuestas({});
           reset();
         }}
       />
@@ -212,13 +267,27 @@ function CuestionarioPage() {
       {step > 0 && (
         <DiagnosticoProgress
           step={step}
-          totalSteps={totalSteps}
           answered={answeredCount}
           totalQuestions={totalPreguntas}
+          maxQuestions={TOTAL_PREGUNTAS_MODELO}
           iaActiva={iaActiva}
           onIaToggle={setIaActiva}
-          label={currentPregunta ? `Pregunta ${step} de ${totalPreguntas}` : undefined}
+          label={
+            currentPregunta
+              ? `Pregunta ${step} de ${totalPreguntas} aplicables (${TOTAL_PREGUNTAS_MODELO} en el modelo)`
+              : `Pregunta ${Math.min(step, totalPreguntas)} de ${totalPreguntas}`
+          }
         />
+      )}
+
+      {step > 0 && respuestasMap[1] === "no" && currentPregunta?.id === 6 && (
+        <Alert className="mb-4 border-primary/20 bg-primary/5">
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            Respondiste <strong>No</strong> a tener política de datos. Las preguntas 2 a 5 no aplican y el
+            bloque de política queda en 0%.
+          </AlertDescription>
+        </Alert>
       )}
 
       <div className="flex-1 py-6 md:py-10">
@@ -229,24 +298,18 @@ function CuestionarioPage() {
             onResponsableChange={(v) => setValue("responsable", v)}
             responsableError={errors.responsable?.message}
             onStart={handleStart}
-            totalPreguntas={totalPreguntas}
           />
         )}
 
         {currentPregunta && (
-          <Controller
-            control={control}
-            name={`respuestas.${currentPregunta.id}`}
-            render={({ field }) => (
-              <QuestionCard
-                pregunta={currentPregunta}
-                value={field.value}
-                onChange={(v) => handleAnswer(currentPregunta.id, v)}
-                iaActiva={iaActiva}
-                index={step - 1}
-                total={totalPreguntas}
-              />
-            )}
+          <QuestionCard
+            pregunta={currentPregunta}
+            value={respuestas[currentPregunta.id]}
+            onChange={(v) => handleAnswer(currentPregunta.id, v)}
+            iaActiva={iaActiva}
+            index={step - 1}
+            total={totalPreguntas}
+            showSkipHint={currentPregunta.id === 1}
           />
         )}
       </div>

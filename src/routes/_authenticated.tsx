@@ -65,10 +65,10 @@ function AuthLayout() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full app-shell-bg">
+      <div className="flex h-screen w-full overflow-hidden app-shell-bg">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/80 bg-background/85 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <header className="z-30 flex h-11 shrink-0 items-center gap-2 border-b border-border/80 bg-background/85 px-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
             <SidebarTrigger className="-ml-1" />
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-sm font-semibold tracking-tight">{pageTitle}</h1>
@@ -95,7 +95,7 @@ function AuthLayout() {
               {initials}
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-6 lg:p-8">
+          <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 md:p-4 lg:p-5">
             <Outlet />
           </main>
         </div>

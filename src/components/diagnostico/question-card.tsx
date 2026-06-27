@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Check, X } from "lucide-react";
-import type { PreguntaDiagnostico, RespuestaValor } from "@/lib/diagnostico";
+import { getBloque, type PreguntaDiagnostico, type RespuestaValor } from "@/lib/diagnostico";
 import { AiAssistant } from "@/components/diagnostico/ai-assistant";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ type QuestionCardProps = {
   iaActiva: boolean;
   index: number;
   total: number;
+  showSkipHint?: boolean;
 };
 
 export function QuestionCard({
@@ -26,16 +27,35 @@ export function QuestionCard({
   iaActiva,
   index,
   total,
+  showSkipHint,
 }: QuestionCardProps) {
+  const bloque = getBloque(pregunta.bloque);
+  const pesoLabel = pregunta.esComplementaria
+    ? "Complementaria · no suma al puntaje"
+    : pregunta.peso != null
+      ? `Peso: ${pregunta.peso}%`
+      : pregunta.id === 1
+        ? `Bloque ${bloque.titulo} · hasta ${bloque.pesoMax}%`
+        : null;
+
   return (
     <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
       <div className="text-center space-y-2">
         <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold px-3 py-1">
           Pregunta {index + 1} de {total}
         </span>
+        <p className="text-xs font-medium text-muted-foreground">{bloque.titulo}</p>
         <h2 className="text-xl md:text-2xl font-semibold leading-snug max-w-xl mx-auto">
           {pregunta.texto}
         </h2>
+        {pesoLabel && (
+          <p className="text-xs text-muted-foreground">{pesoLabel}</p>
+        )}
+        {showSkipHint && (
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            Si respondes <strong>No</strong>, se omiten las preguntas 2 a 5 (detalle de la política).
+          </p>
+        )}
         <p className="text-sm text-muted-foreground">
           Elige la opción que mejor describa tu organización hoy
         </p>

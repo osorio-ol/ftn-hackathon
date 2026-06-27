@@ -5,9 +5,9 @@ import { Switch } from "@/components/ui/switch";
 
 type DiagnosticoProgressProps = {
   step: number;
-  totalSteps: number;
   answered: number;
   totalQuestions: number;
+  maxQuestions?: number;
   iaActiva: boolean;
   onIaToggle: (value: boolean) => void;
   label?: string;
@@ -15,24 +15,31 @@ type DiagnosticoProgressProps = {
 
 export function DiagnosticoProgress({
   step,
-  totalSteps,
   answered,
   totalQuestions,
+  maxQuestions,
   iaActiva,
   onIaToggle,
   label,
 }: DiagnosticoProgressProps) {
-  const progress = totalQuestions > 0 ? (answered / totalQuestions) * 100 : 0;
+  const progress =
+    totalQuestions > 0 ? Math.min(100, (answered / totalQuestions) * 100) : 0;
 
   return (
     <div className="sticky top-0 z-10 -mx-4 md:-mx-6 px-4 md:px-6 py-3 bg-background/80 backdrop-blur-md border-b space-y-3">
       <div className="flex items-center justify-between gap-4 max-w-2xl mx-auto">
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground truncate">
-            {label ?? `Paso ${step + 1} de ${totalSteps}`}
+            {label ?? `Pregunta ${step} de ${totalQuestions}`}
           </p>
           <p className="text-sm font-medium">
             {answered} de {totalQuestions} respondidas
+            {maxQuestions != null && totalQuestions < maxQuestions && (
+              <span className="text-muted-foreground font-normal">
+                {" "}
+                · {maxQuestions - totalQuestions} omitidas por tus respuestas
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">

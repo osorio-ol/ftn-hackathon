@@ -14,14 +14,17 @@ export type RiskItem = {
 };
 
 const CATEGORY_MAP: Record<number, { category: string; impact: number; likelihood: number }> = {
-  1: { category: "Autorización", impact: 5, likelihood: 4 },
-  2: { category: "Política de tratamiento", impact: 5, likelihood: 3 },
-  3: { category: "Derechos del titular", impact: 4, likelihood: 4 },
-  4: { category: "Consultas y reclamos", impact: 4, likelihood: 3 },
-  5: { category: "Seguridad de la información", impact: 5, likelihood: 4 },
-  6: { category: "Capacitación", impact: 3, likelihood: 3 },
-  7: { category: "Obligaciones legales", impact: 5, likelihood: 4 },
-  8: { category: "Mejora continua", impact: 3, likelihood: 2 },
+  1: { category: "Política de datos personales", impact: 5, likelihood: 4 },
+  2: { category: "Política de datos personales", impact: 4, likelihood: 3 },
+  3: { category: "Política de datos personales", impact: 4, likelihood: 3 },
+  4: { category: "Política de datos personales", impact: 4, likelihood: 3 },
+  5: { category: "Política de datos personales", impact: 4, likelihood: 3 },
+  6: { category: "Privacidad desde el diseño", impact: 4, likelihood: 3 },
+  7: { category: "Privacidad desde el diseño", impact: 4, likelihood: 3 },
+  8: { category: "Privacidad desde el diseño", impact: 4, likelihood: 3 },
+  9: { category: "Gobernanza", impact: 5, likelihood: 4 },
+  10: { category: "Gobernanza", impact: 4, likelihood: 3 },
+  11: { category: "Gobernanza", impact: 3, likelihood: 2 },
 };
 
 function riskLevelFromScore(score: number): RiskLevel {

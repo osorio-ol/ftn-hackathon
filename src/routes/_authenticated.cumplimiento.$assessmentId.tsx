@@ -28,6 +28,7 @@ import { ComplianceChecklistPanel } from "@/components/compliance/compliance-che
 import { ComplianceAlertsPanel } from "@/components/compliance/compliance-alerts-panel";
 import { BeforeAfterPanel } from "@/components/compliance/before-after-panel";
 import type { DocumentAnalysisResult } from "@/lib/compliance/document-analysis";
+import { AppViewport } from "@/components/layout/app-viewport";
 
 export const Route = createFileRoute("/_authenticated/cumplimiento/$assessmentId")({
   component: CumplimientoPage,
@@ -121,64 +122,57 @@ function CumplimientoPage() {
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button asChild variant="ghost" size="sm" className="rounded-lg">
+    <AppViewport className="app-page-wide">
+      <div className="page-toolbar">
+        <Button asChild variant="ghost" size="sm">
           <Link to="/recomendaciones/$assessmentId" params={{ assessmentId: String(id) }}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver al informe
+            Informe
           </Link>
         </Button>
-        <Button size="sm" className="rounded-lg shadow-sm" onClick={() => downloadReporte(item)}>
+        <Button size="sm" className="rounded-lg" onClick={() => downloadReporte(item)}>
           <Download className="mr-2 h-4 w-4" />
-          Descargar PDF completo
+          Descargar PDF
         </Button>
       </div>
 
-      <Card className="overflow-hidden border-primary/15 bg-gradient-to-br from-primary/[0.07] via-card to-card shadow-sm">
-        <CardContent className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
+      <div className="grid gap-4 lg:grid-cols-[1fr_minmax(260px,320px)]">
+        <Card className="border-primary/15 shadow-sm">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <div>
-                <h1 className="text-xl font-bold tracking-tight">Centro de cumplimiento</h1>
+                <h1 className="text-base font-bold tracking-tight">Centro de cumplimiento</h1>
                 <p className="text-sm text-muted-foreground">{item.empresa}</p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="font-normal">
-                Evaluación #{id}
-              </Badge>
-              <Badge variant="outline" className="font-normal">
-                Checklist {checklistPct}%
-              </Badge>
-              <Badge variant="outline" className="font-normal">
-                Plan {actionPct}%
-              </Badge>
+            <div className="flex flex-wrap gap-1.5">
+              <Badge variant="secondary" className="text-xs font-normal">#{id}</Badge>
+              <Badge variant="outline" className="text-xs font-normal">Checklist {checklistPct}%</Badge>
+              <Badge variant="outline" className="text-xs font-normal">Plan {actionPct}%</Badge>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        <ComplianceScoreCard puntaje={item.puntaje} />
+      </div>
 
-      <ComplianceScoreCard puntaje={item.puntaje} />
-
-      <Tabs defaultValue="riesgos">
-        <TabsList className="flex h-auto flex-wrap gap-1 rounded-xl bg-muted/50 p-1">
-          <TabsTrigger value="riesgos">Riesgos</TabsTrigger>
-          <TabsTrigger value="plan">Plan de acción</TabsTrigger>
-          <TabsTrigger value="documentos">Documentos</TabsTrigger>
-          <TabsTrigger value="checklist">Checklist</TabsTrigger>
-          <TabsTrigger value="alertas">Alertas</TabsTrigger>
-          <TabsTrigger value="comparacion">Antes/Después</TabsTrigger>
+      <Tabs defaultValue="riesgos" className="space-y-3">
+        <TabsList className="flex h-auto w-full flex-wrap gap-1 rounded-lg bg-muted/50 p-1">
+          <TabsTrigger value="riesgos" className="text-sm px-3 py-2">Riesgos</TabsTrigger>
+          <TabsTrigger value="plan" className="text-sm px-3 py-2">Plan</TabsTrigger>
+          <TabsTrigger value="documentos" className="text-sm px-3 py-2">Documentos</TabsTrigger>
+          <TabsTrigger value="checklist" className="text-sm px-3 py-2">Checklist</TabsTrigger>
+          <TabsTrigger value="alertas" className="text-sm px-3 py-2">Alertas</TabsTrigger>
+          <TabsTrigger value="comparacion" className="text-sm px-3 py-2">Comparar</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="riesgos" className="mt-4">
+        <TabsContent value="riesgos" className="mt-0">
           <RiskMatrixPanel brechas={item.brechas} />
         </TabsContent>
 
-        <TabsContent value="plan" className="mt-4">
+        <TabsContent value="plan" className="mt-0">
           <ActionPlanPanel
             recomendaciones={item.recomendaciones}
             brechas={item.brechas}
@@ -189,7 +183,7 @@ function CumplimientoPage() {
           />
         </TabsContent>
 
-        <TabsContent value="documentos" className="mt-4 space-y-4">
+        <TabsContent value="documentos" className="mt-0 space-y-4">
           <DocumentGeneratorPanel
             empresa={item.empresa}
             nit={assessment.company?.nit}
@@ -205,7 +199,7 @@ function CumplimientoPage() {
           />
         </TabsContent>
 
-        <TabsContent value="checklist" className="mt-4">
+        <TabsContent value="checklist" className="mt-0">
           <ComplianceChecklistPanel
             recomendaciones={item.recomendaciones}
             brechas={item.brechas}
@@ -216,7 +210,7 @@ function CumplimientoPage() {
           />
         </TabsContent>
 
-        <TabsContent value="alertas" className="mt-4">
+        <TabsContent value="alertas" className="mt-0">
           <ComplianceAlertsPanel
             lastAssessmentDate={assessment.created_at}
             dismissed={dismissedAlerts}
@@ -226,7 +220,7 @@ function CumplimientoPage() {
           />
         </TabsContent>
 
-        <TabsContent value="comparacion" className="mt-4">
+        <TabsContent value="comparacion" className="mt-0">
           {comparisonQuery.isLoading ? (
             <Skeleton className="h-48 w-full" />
           ) : comparisonQuery.data ? (
@@ -241,6 +235,6 @@ function CumplimientoPage() {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </AppViewport>
   );
 }

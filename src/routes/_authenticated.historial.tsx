@@ -7,6 +7,7 @@ import { listAssessmentsForUser } from "@/lib/api/assessments";
 import { loadHistorialItemForAssessment } from "@/lib/assessment-history";
 import { type HistorialItem } from "@/lib/history";
 import { ReportViewerDialog } from "@/components/report/report-viewer-dialog";
+import { AppViewport } from "@/components/layout/app-viewport";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Bot, Download, Eye, History } from "lucide-react";
+import { Download, History } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/historial")({
@@ -47,7 +48,7 @@ function HistorialPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <AppViewport>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -56,31 +57,31 @@ function HistorialPage() {
           </CardTitle>
           <CardDescription>
             {user && isCompanyUser(user.role)
-              ? `Evaluaciones de ${user.company_name ?? "tu empresa"}.`
-              : "Todas las evaluaciones registradas en la plataforma"}
+              ? `Evaluaciones de ${user.company_name ?? "tu empresa"}`
+              : "Todas las evaluaciones"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
+            <div className="space-y-2 p-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-full" />
               ))}
             </div>
           ) : items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Aún no hay evaluaciones. Completa el autodiagnóstico para ver tu historial.
+              Aún no hay evaluaciones.
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Empresa</TableHead>
                   <TableHead>Fecha</TableHead>
-                  <TableHead>Puntaje</TableHead>
+                  <TableHead>%</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Riesgo</TableHead>
                   <TableHead>IA</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -88,10 +89,10 @@ function HistorialPage() {
               <TableBody>
                 {items.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-mono text-xs">{item.id}</TableCell>
-                    <TableCell>{item.company_name}</TableCell>
+                    <TableCell className="font-mono">{item.id}</TableCell>
+                    <TableCell className="max-w-[160px] truncate">{item.company_name}</TableCell>
                     <TableCell>{item.created_at.slice(0, 10)}</TableCell>
-                    <TableCell>{Math.round(item.score)}%</TableCell>
+                    <TableCell>{Math.round(item.score)}</TableCell>
                     <TableCell>
                       <Badge
                         variant={
@@ -105,11 +106,9 @@ function HistorialPage() {
                         {item.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs">{item.nivel_riesgo ?? "—"}</TableCell>
                     <TableCell>
                       {item.has_recommendation ? (
                         <Badge variant="outline" className="text-primary border-primary/30">
-                          <Bot className="mr-1 h-3 w-3" />
                           Sí
                         </Badge>
                       ) : (
@@ -117,18 +116,17 @@ function HistorialPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
+                      <div className="flex justify-end gap-2">
                         <Button size="sm" variant="outline" asChild>
                           <Link
                             to="/recomendaciones/$assessmentId"
                             params={{ assessmentId: String(item.id) }}
                           >
-                            <Eye className="mr-1 h-3 w-3" />
                             Ver
                           </Link>
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => void openReport(item)}>
-                          <Download className="h-3 w-3" />
+                        <Button size="sm" variant="outline" className="h-9 w-9 p-0" onClick={() => void openReport(item)}>
+                          <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -136,6 +134,7 @@ function HistorialPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -145,6 +144,6 @@ function HistorialPage() {
         open={!!viewItem}
         onOpenChange={(open) => !open && setViewItem(null)}
       />
-    </div>
+    </AppViewport>
   );
 }

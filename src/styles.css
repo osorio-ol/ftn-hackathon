@@ -159,4 +159,59 @@
     background: linear-gradient(to bottom, var(--color-primary), oklch(0.58 0.14 145));
     border-radius: 3px 0 0 3px;
   }
+
+  .app-page {
+    @apply mx-auto w-full max-w-7xl;
+  }
+
+  .app-page-wide {
+    @apply mx-auto w-full max-w-6xl;
+  }
+
+  .app-page-content {
+    @apply flex flex-col gap-4 pb-2;
+  }
+
+  .app-chart-panel {
+    @apply h-52 w-full sm:h-56;
+  }
+
+  .page-toolbar {
+    @apply flex flex-wrap items-center justify-between gap-2;
+  }
+
+  @keyframes chat-fab-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  @keyframes chat-fab-glow {
+    0%,
+    100% {
+      box-shadow:
+        0 8px 24px oklch(0.42 0.11 195 / 0.45),
+        0 0 0 0 oklch(0.55 0.14 195 / 0.35);
+    }
+    50% {
+      box-shadow:
+        0 12px 28px oklch(0.42 0.11 195 / 0.55),
+        0 0 0 10px oklch(0.55 0.14 195 / 0);
+    }
+  }
+
+  .chat-fab {
+    animation: chat-fab-float 3.2s ease-in-out infinite, chat-fab-glow 2.8s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chat-fab {
+      animation: none;
+      box-shadow: 0 8px 24px oklch(0.42 0.11 195 / 0.4);
+    }
+  }
 }

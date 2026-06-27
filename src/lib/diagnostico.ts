@@ -1,87 +1,184 @@
 export type RespuestaValor = "si" | "no";
 
+export type BloqueId = "politica" | "privacidad" | "gobernanza";
+
+export type BloqueDiagnostico = {
+  id: BloqueId;
+  titulo: string;
+  pesoMax: number;
+};
+
 export type PreguntaDiagnostico = {
   id: number;
   texto: string;
-  peso: number;
+  bloque: BloqueId;
+  /** Peso sobre 100. null = no suma (pregunta compuerta o complementaria). */
+  peso: number | null;
+  esComplementaria?: boolean;
+  condicional?: { preguntaId: number; respuesta: RespuestaValor };
   ayudaLegal: string;
   ayudaPractica: string;
 };
 
+export const bloquesDiagnostico: BloqueDiagnostico[] = [
+  { id: "politica", titulo: "Política de datos personales", pesoMax: 40 },
+  { id: "privacidad", titulo: "Privacidad desde el diseño", pesoMax: 36 },
+  { id: "gobernanza", titulo: "Gobernanza", pesoMax: 24 },
+];
+
 export const preguntasDiagnostico: PreguntaDiagnostico[] = [
   {
     id: 1,
-    texto: "¿La empresa obtiene autorización para tratar datos?",
-    peso: 12.5,
+    texto: "¿Cuenta con una política de tratamiento de datos personales?",
+    bloque: "politica",
+    peso: null,
     ayudaLegal:
-      "La Ley 1581 exige autorización previa, expresa e informada del titular antes del tratamiento de datos personales.",
+      "El responsable del tratamiento debe adoptar una política de tratamiento de datos personales conforme a la Ley 1581.",
     ayudaPractica:
-      "Verifique formularios, checkboxes o contratos donde el titular autorice el uso de sus datos.",
+      "Si responde Sí, evaluará los criterios de documentación, finalidades y derechos de los titulares.",
   },
   {
     id: 2,
-    texto: "¿Cuenta con una política de tratamiento publicada?",
-    peso: 12.5,
+    texto: "¿La política está documentada y publicada en medio de fácil acceso?",
+    bloque: "politica",
+    peso: 10,
+    condicional: { preguntaId: 1, respuesta: "si" },
     ayudaLegal:
-      "El responsable del tratamiento debe adoptar y publicar una política de tratamiento de datos personales.",
+      "La política debe estar disponible para consulta de titulares y terceros interesados.",
     ayudaPractica:
-      "Busque el documento en el sitio web, intranet o avisos de privacidad de la organización.",
+      "Verifique sitio web, intranet, avisos de privacidad o canales físicos de acceso.",
   },
   {
     id: 3,
-    texto: "¿Permite a los titulares ejercer sus derechos?",
-    peso: 12.5,
+    texto: "¿Define las finalidades del tratamiento de datos?",
+    bloque: "politica",
+    peso: 10,
+    condicional: { preguntaId: 1, respuesta: "si" },
     ayudaLegal:
-      "Los titulares tienen derecho a conocer, actualizar, rectificar y suprimir sus datos personales.",
+      "Toda base de datos debe tener finalidades legítimas, explícitas y determinadas.",
     ayudaPractica:
-      "Confirme que existen canales y procedimientos para atender solicitudes de los titulares.",
+      "Revise que la política describa para qué se usan los datos en cada proceso.",
   },
   {
     id: 4,
-    texto: "¿Tiene procedimientos para consultas y reclamos?",
-    peso: 12.5,
+    texto: "¿Incluye los derechos de los titulares?",
+    bloque: "politica",
+    peso: 10,
+    condicional: { preguntaId: 1, respuesta: "si" },
     ayudaLegal:
-      "La ley establece mecanismos para que los titulares presenten consultas y reclamos sobre sus datos.",
+      "Los titulares tienen derecho a conocer, actualizar, rectificar y suprimir sus datos, entre otros.",
     ayudaPractica:
-      "Revise si hay un protocolo documentado con plazos de respuesta y responsables asignados.",
+      "Confirme que la política menciona los derechos reconocidos por la ley.",
   },
   {
     id: 5,
-    texto: "¿Aplica medidas de seguridad para proteger los datos?",
-    peso: 12.5,
+    texto: "¿Menciona cómo ejercer los derechos de los titulares?",
+    bloque: "politica",
+    peso: 10,
+    condicional: { preguntaId: 1, respuesta: "si" },
     ayudaLegal:
-      "Se requieren medidas técnicas, humanas y administrativas para proteger la información personal.",
+      "Debe existir un mecanismo claro para presentar consultas, reclamos y solicitudes.",
     ayudaPractica:
-      "Evalúe controles de acceso, cifrado, respaldos y políticas de seguridad de la información.",
+      "Busque correos, formularios o procedimientos con plazos de respuesta definidos.",
   },
   {
     id: 6,
-    texto: "¿Capacita a su personal en protección de datos?",
-    peso: 12.5,
+    texto: "¿Incorpora evaluaciones de impacto (Privacy Impact Assessments)?",
+    bloque: "privacidad",
+    peso: 12,
     ayudaLegal:
-      "El personal que trata datos debe conocer las obligaciones legales y las políticas internas.",
+      "Las evaluaciones de impacto permiten identificar riesgos antes de implementar tratamientos.",
     ayudaPractica:
-      "Verifique registros de capacitaciones, inducciones o programas de concientización en privacidad.",
+      "Revise si existen EIPD o análisis de riesgo para nuevos proyectos o sistemas.",
   },
   {
     id: 7,
-    texto: "¿Conoce y cumple las obligaciones legales sobre tratamiento de datos?",
-    peso: 12.5,
+    texto: "¿Aplica técnicas de minimización de datos?",
+    bloque: "privacidad",
+    peso: 12,
     ayudaLegal:
-      "El responsable debe cumplir los principios y deberes establecidos en la Ley 1581 y normas complementarias.",
+      "Solo deben tratarse datos adecuados, pertinentes y no excesivos respecto a la finalidad.",
     ayudaPractica:
-      "Revise el registro de bases de datos ante la SIC y el cumplimiento de avisos de privacidad.",
+      "Evalúe formularios, bases de datos y retención para evitar datos innecesarios.",
   },
   {
     id: 8,
-    texto: "¿Realiza seguimiento y mejora continua de sus prácticas de protección de datos?",
-    peso: 12.5,
+    texto: "¿Configura sus sistemas para recopilar el mínimo de datos por defecto?",
+    bloque: "privacidad",
+    peso: 12,
     ayudaLegal:
-      "La protección de datos requiere revisión periódica, auditorías y actualización de controles.",
+      "Privacy by default exige que la configuración inicial limite la recolección al mínimo necesario.",
     ayudaPractica:
-      "Busque planes de mejora, indicadores de cumplimiento o revisiones anuales de la política.",
+      "Verifique que apps y formularios no pidan más datos de los estrictamente requeridos.",
+  },
+  {
+    id: 9,
+    texto: "¿Cuenta con un sistema de administración de riesgos?",
+    bloque: "gobernanza",
+    peso: 16,
+    ayudaLegal:
+      "La gestión de riesgos de privacidad es parte de la gobernanza del tratamiento de datos.",
+    ayudaPractica:
+      "Busque matriz de riesgos, planes de tratamiento o revisiones periódicas documentadas.",
+  },
+  {
+    id: 10,
+    texto: "¿Cuenta con un oficial de protección de datos personales?",
+    bloque: "gobernanza",
+    peso: 8,
+    ayudaLegal:
+      "Según el tamaño y riesgo del tratamiento, puede requerirse un delegado u oficial de protección.",
+    ayudaPractica:
+      "Identifique si existe un responsable designado para privacidad y cumplimiento.",
+  },
+  {
+    id: 11,
+    texto: "¿Está designado formalmente?",
+    bloque: "gobernanza",
+    peso: null,
+    esComplementaria: true,
+    condicional: { preguntaId: 10, respuesta: "si" },
+    ayudaLegal:
+      "La designación formal del oficial debe constar en acta, contrato o documento interno.",
+    ayudaPractica:
+      "Pregunta complementaria: no suma al puntaje, pero ayuda a validar la formalización.",
   },
 ];
+
+export function getBloque(bloqueId: BloqueId): BloqueDiagnostico {
+  return bloquesDiagnostico.find((b) => b.id === bloqueId)!;
+}
+
+/** Preguntas visibles según respuestas condicionales. */
+export function getPreguntasActivas(
+  respuestas: Record<number, RespuestaValor | undefined>
+): PreguntaDiagnostico[] {
+  return preguntasDiagnostico.filter((p) => {
+    if (!p.condicional) return true;
+    return respuestas[p.condicional.preguntaId] === p.condicional.respuesta;
+  });
+}
+
+/** Limpia respuestas dependientes al cambiar una pregunta compuerta. */
+export function clearRespuestasDependientes(
+  respuestas: Record<number, RespuestaValor | undefined>,
+  preguntaId: number,
+  valor: RespuestaValor
+): Record<number, RespuestaValor> {
+  const next: Record<number, RespuestaValor> = { ...respuestas, [preguntaId]: valor };
+
+  if (preguntaId === 1 && valor === "no") {
+    for (const id of [2, 3, 4, 5]) delete next[id];
+  }
+  if (preguntaId === 10 && valor === "no") {
+    delete next[11];
+  }
+  if (preguntaId === 1 && valor === "si") {
+    // Sin acción: las subpreguntas se mostrarán en el flujo.
+  }
+
+  return next;
+}
 
 export function calcularPuntaje(respuestas: Record<number, RespuestaValor | undefined>): {
   puntaje: number;
@@ -89,22 +186,52 @@ export function calcularPuntaje(respuestas: Record<number, RespuestaValor | unde
   brechas: string[];
   respuestasSi: number;
   totalPreguntas: number;
+  porBloque: Record<BloqueId, number>;
 } {
   const brechas: string[] = [];
-  let total = 0;
   let respuestasSi = 0;
+  let totalPreguntas = 0;
+  const porBloque: Record<BloqueId, number> = {
+    politica: 0,
+    privacidad: 0,
+    gobernanza: 0,
+  };
 
-  for (const pregunta of preguntasDiagnostico) {
+  const q1 = respuestas[1];
+  if (q1 === "no") {
+    totalPreguntas += 1;
+    brechas.push(preguntasDiagnostico[0].texto);
+  } else if (q1 === "si") {
+    for (const pregunta of preguntasDiagnostico.filter((p) => p.id >= 2 && p.id <= 5)) {
+      totalPreguntas += 1;
+      const resp = respuestas[pregunta.id];
+      if (resp === "si") {
+        porBloque.politica += pregunta.peso ?? 0;
+        respuestasSi += 1;
+      } else if (resp === "no") {
+        brechas.push(pregunta.texto);
+      }
+    }
+  }
+
+  for (const pregunta of preguntasDiagnostico.filter((p) => p.id >= 6 && p.id <= 10)) {
+    totalPreguntas += 1;
     const resp = respuestas[pregunta.id];
     if (resp === "si") {
-      total += pregunta.peso;
+      porBloque[pregunta.bloque] += pregunta.peso ?? 0;
       respuestasSi += 1;
     } else if (resp === "no") {
       brechas.push(pregunta.texto);
     }
   }
 
-  const puntaje = Math.round(total);
+  if (respuestas[10] === "si" && respuestas[11] === "no") {
+    brechas.push(preguntasDiagnostico[10].texto);
+  }
+
+  const puntaje = Math.round(
+    porBloque.politica + porBloque.privacidad + porBloque.gobernanza
+  );
   const estado = puntaje >= 80 ? "Cumple" : puntaje >= 60 ? "Parcial" : "No cumple";
 
   return {
@@ -112,7 +239,8 @@ export function calcularPuntaje(respuestas: Record<number, RespuestaValor | unde
     estado,
     brechas,
     respuestasSi,
-    totalPreguntas: preguntasDiagnostico.length,
+    totalPreguntas,
+    porBloque,
   };
 }
 
@@ -120,29 +248,38 @@ export function generarRecomendaciones(brechas: string[]): string[] {
   const recs = new Set<string>();
   for (const brecha of brechas) {
     const lower = brecha.toLowerCase();
-    if (lower.includes("autorización")) {
-      recs.add("Implemente mecanismos de autorización previa, expresa e informada en todos los formularios de recolección.");
+    if (lower.includes("política de tratamiento")) {
+      recs.add("Elabore y adopte una política de tratamiento de datos personales alineada con la Ley 1581.");
     }
-    if (lower.includes("política")) {
-      recs.add("Elabore y publique una política de tratamiento de datos alineada con la Ley 1581.");
+    if (lower.includes("documentada") || lower.includes("publicada")) {
+      recs.add("Documente y publique la política en un medio de fácil acceso (web, intranet o aviso de privacidad).");
     }
-    if (lower.includes("derechos") || lower.includes("titulares")) {
-      recs.add("Establezca canales claros para que los titulares ejerzan sus derechos de acceso, rectificación y supresión.");
+    if (lower.includes("finalidades")) {
+      recs.add("Defina y documente las finalidades del tratamiento para cada base de datos.");
     }
-    if (lower.includes("consultas") || lower.includes("reclamos")) {
-      recs.add("Documente un procedimiento de consultas y reclamos con plazos y responsables definidos.");
+    if (lower.includes("derechos de los titulares") && !lower.includes("ejercer")) {
+      recs.add("Incluya en la política los derechos de los titulares reconocidos por la ley.");
     }
-    if (lower.includes("seguridad")) {
-      recs.add("Fortalezca las medidas técnicas y administrativas de seguridad de la información.");
+    if (lower.includes("ejercer los derechos")) {
+      recs.add("Describa canales y procedimientos para que los titulares ejerzan sus derechos.");
     }
-    if (lower.includes("capacita")) {
-      recs.add("Implemente un programa de capacitación periódica en protección de datos para todo el personal.");
+    if (lower.includes("evaluaciones de impacto") || lower.includes("privacy impact")) {
+      recs.add("Implemente evaluaciones de impacto en privacidad (EIPD) para tratamientos de alto riesgo.");
     }
-    if (lower.includes("obligaciones") || lower.includes("legales")) {
-      recs.add("Realice un diagnóstico de cumplimiento normativo y registre las bases de datos ante la SIC.");
+    if (lower.includes("minimización")) {
+      recs.add("Aplique técnicas de minimización: recolecte solo datos necesarios y elimine el exceso.");
     }
-    if (lower.includes("seguimiento") || lower.includes("mejora")) {
-      recs.add("Defina un plan de mejora continua con revisiones periódicas del programa de privacidad.");
+    if (lower.includes("mínimo de datos") || lower.includes("por defecto")) {
+      recs.add("Configure formularios y sistemas con recolección mínima de datos por defecto.");
+    }
+    if (lower.includes("administración de riesgos") || lower.includes("riesgos")) {
+      recs.add("Establezca un sistema de administración de riesgos de privacidad con seguimiento periódico.");
+    }
+    if (lower.includes("oficial de protección")) {
+      recs.add("Designe un oficial o responsable de protección de datos personales según la estructura de su organización.");
+    }
+    if (lower.includes("designado formalmente")) {
+      recs.add("Formalice por escrito la designación del oficial de protección de datos.");
     }
   }
   if (recs.size === 0) {

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Bot, Download, Info } from "lucide-react";
+import { ArrowLeft, Download, Info } from "lucide-react";
 import {
   getAssessment,
   getRecommendationOptional,
@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/client";
 import { downloadReporte } from "@/lib/history";
 import { ReportDetail } from "@/components/report/report-detail";
+import { AppViewport } from "@/components/layout/app-viewport";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,13 +105,17 @@ function RecomendacionesPage() {
   const item = buildHistorialFromAssessment(assessment, rec?.report, user?.name);
 
   return (
-    <div className="max-w-3xl space-y-4">
-      <div className="flex items-center gap-3">
+    <AppViewport className="app-page-wide">
+      <div className="page-toolbar">
         <Button asChild variant="ghost" size="sm">
           <Link to="/diagnosticos">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver
           </Link>
+        </Button>
+        <Button size="sm" className="rounded-lg" onClick={() => downloadReporte(item)}>
+          <Download className="mr-2 h-4 w-4" />
+          Descargar PDF
         </Button>
       </div>
 
@@ -118,44 +123,30 @@ function RecomendacionesPage() {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertTitle>Sin informe de IA</AlertTitle>
-          <AlertDescription>
-            Esta evaluación no tiene recomendaciones generadas por IA. Se muestran brechas y
-            recomendaciones básicas según las respuestas del cuestionario.
+          <AlertDescription className="text-sm">
+            Se muestran brechas y recomendaciones según el cuestionario.
           </AlertDescription>
         </Alert>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {hasAiReport ? (
-              <>
-                <Bot className="h-5 w-5 text-primary" />
-                Recomendaciones IA — Ley 1581
-              </>
-            ) : (
-              "Detalle de evaluación — Ley 1581"
-            )}
+          <CardTitle className="text-lg">
+            {hasAiReport ? "🤖 Recomendaciones IA" : "Detalle de evaluación"}
           </CardTitle>
           <CardDescription>
             Evaluación #{id} · {assessment.created_at.slice(0, 10)}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           <ReportDetail item={item} />
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button asChild variant="secondary" className="flex-1 rounded-xl">
-              <Link to="/cumplimiento/$assessmentId" params={{ assessmentId: String(id) }}>
-                Centro de cumplimiento
-              </Link>
-            </Button>
-            <Button className="flex-1 rounded-xl" onClick={() => downloadReporte(item)}>
-              <Download className="mr-2 h-4 w-4" />
-              Descargar PDF
-            </Button>
-          </div>
+          <Button asChild variant="secondary" className="w-full rounded-lg sm:w-auto">
+            <Link to="/cumplimiento/$assessmentId" params={{ assessmentId: String(id) }}>
+              Ir al centro de cumplimiento
+            </Link>
+          </Button>
         </CardContent>
       </Card>
-    </div>
+    </AppViewport>
   );
 }
