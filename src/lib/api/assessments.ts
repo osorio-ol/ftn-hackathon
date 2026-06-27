@@ -199,6 +199,10 @@ export type RecommendationOut = {
 
 };
 
+export type GenerateRecommendationsOut = RecommendationOut & {
+  n8n_pending: boolean;
+};
+
 
 
 export type CreateAssessmentPayload = {

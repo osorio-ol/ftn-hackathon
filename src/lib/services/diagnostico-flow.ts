@@ -5,7 +5,7 @@ import {
   reportToRecomendaciones,
   type RecommendationReport,
 } from "@/lib/api/assessments";
-import { generateRecommendationsFlow } from "@/lib/api/n8n";
+import { generateRecommendationsFlow, waitForEnrichedRecommendation } from "@/lib/api/n8n";
 import { ApiError } from "@/lib/api/client";
 import type { User } from "@/lib/auth";
 import {
@@ -66,13 +66,22 @@ export async function submitDiagnosticoFlow(
 
   try {
     onPhaseChange?.("loading-report");
-    const recommendation = await generateRecommendationsFlow(assessmentId, {
+    let recommendation = await generateRecommendationsFlow(assessmentId, {
       puntaje: calc.puntaje,
       estado: calc.estado,
       brechas: calc.brechas,
       recomendaciones: fallbackRecomendaciones,
       empresa: user.company_name ?? undefined,
     });
+
+    if (recommendation.n8n_pending) {
+      const enriched = await waitForEnrichedRecommendation(assessmentId);
+      if (enriched) recommendation = { ...enriched, n8n_pending: false };
+      else
+        aiError =
+          "El informe IA está tardando más de lo habitual. Se muestra un resumen preliminar; revisa Recomendaciones IA en unos minutos.";
+    }
+
     aiReport = recommendation.report;
     const fromAi = reportToRecomendaciones(aiReport);
     const fromAiBrechas = reportToBrechas(aiReport);

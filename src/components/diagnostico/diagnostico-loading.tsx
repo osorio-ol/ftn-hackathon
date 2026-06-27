@@ -24,7 +24,9 @@ export function DiagnosticoLoading({ phase }: DiagnosticoLoadingProps) {
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">{phaseMessages[phase]}</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Esto puede tomar unos segundos. Estamos analizando tus respuestas según la Ley 1581.
+          {phase === "loading-report"
+            ? "La IA está elaborando tu informe personalizado. Esto puede tomar hasta un minuto."
+            : "Esto puede tomar unos segundos. Estamos analizando tus respuestas según la Ley 1581."}
         </p>
       </div>
       <div className="flex justify-center gap-1.5">
