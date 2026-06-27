@@ -14,6 +14,7 @@ import { Route as RecuperarClaveRouteImport } from './routes/recuperar-clave'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OauthCallbackRouteImport } from './routes/oauth.callback'
 import { Route as AuthenticatedReportesRouteImport } from './routes/_authenticated.reportes'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated.perfil'
 import { Route as AuthenticatedHistorialRouteImport } from './routes/_authenticated.historial'
@@ -47,6 +48,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthCallbackRoute = OauthCallbackRouteImport.update({
+  id: '/oauth/callback',
+  path: '/oauth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedReportesRoute = AuthenticatedReportesRouteImport.update({
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/historial': typeof AuthenticatedHistorialRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/reportes': typeof AuthenticatedReportesRoute
+  '/oauth/callback': typeof OauthCallbackRoute
   '/cumplimiento/$assessmentId': typeof AuthenticatedCumplimientoAssessmentIdRoute
   '/recomendaciones/$assessmentId': typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/historial': typeof AuthenticatedHistorialRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/reportes': typeof AuthenticatedReportesRoute
+  '/oauth/callback': typeof OauthCallbackRoute
   '/cumplimiento/$assessmentId': typeof AuthenticatedCumplimientoAssessmentIdRoute
   '/recomendaciones/$assessmentId': typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/_authenticated/historial': typeof AuthenticatedHistorialRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/reportes': typeof AuthenticatedReportesRoute
+  '/oauth/callback': typeof OauthCallbackRoute
   '/_authenticated/cumplimiento/$assessmentId': typeof AuthenticatedCumplimientoAssessmentIdRoute
   '/_authenticated/recomendaciones/$assessmentId': typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/historial'
     | '/perfil'
     | '/reportes'
+    | '/oauth/callback'
     | '/cumplimiento/$assessmentId'
     | '/recomendaciones/$assessmentId'
   fileRoutesByTo: FileRoutesByTo
@@ -185,6 +195,7 @@ export interface FileRouteTypes {
     | '/historial'
     | '/perfil'
     | '/reportes'
+    | '/oauth/callback'
     | '/cumplimiento/$assessmentId'
     | '/recomendaciones/$assessmentId'
   id:
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/_authenticated/historial'
     | '/_authenticated/perfil'
     | '/_authenticated/reportes'
+    | '/oauth/callback'
     | '/_authenticated/cumplimiento/$assessmentId'
     | '/_authenticated/recomendaciones/$assessmentId'
   fileRoutesById: FileRoutesById
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RecuperarClaveRoute: typeof RecuperarClaveRoute
   RegistroRoute: typeof RegistroRoute
+  OauthCallbackRoute: typeof OauthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -249,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/callback': {
+      id: '/oauth/callback'
+      path: '/oauth/callback'
+      fullPath: '/oauth/callback'
+      preLoaderRoute: typeof OauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/reportes': {
@@ -362,6 +382,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RecuperarClaveRoute: RecuperarClaveRoute,
   RegistroRoute: RegistroRoute,
+  OauthCallbackRoute: OauthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
