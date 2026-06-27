@@ -29,7 +29,8 @@ function GoogleIcon({ className }: { className?: string }) {
 
 export function OAuthButtons({ className }: { className?: string }) {
   const handleGoogleLogin = () => {
-    window.location.href = `${API_URL}/api/v1/auth/oauth/google`;
+    const returnOrigin = encodeURIComponent(window.location.origin);
+    window.location.href = `${API_URL}/api/v1/auth/oauth/google?return_origin=${returnOrigin}`;
   };
 
   return (
