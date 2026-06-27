@@ -17,11 +17,22 @@ export type ChatAttachment = {
   type?: string;
 };
 
+export type ChatContext = {
+  pathname?: string;
+  source?: string;
+  help_type?: string;
+  question_id?: number;
+  question_text?: string;
+  question_block?: string;
+};
+
 export type SendChatMessageInput = {
   message: string;
   history: ChatMessage[];
   sessionId: string;
   user: User;
+  context?: ChatContext;
+  /** @deprecated Usar context.pathname */
   pathname?: string;
 };
 
@@ -119,7 +130,8 @@ export async function sendChatMessage(input: SendChatMessageInput): Promise<Chat
         session_id: input.sessionId,
         history,
         context: {
-          pathname: input.pathname ?? "",
+          pathname: input.context?.pathname ?? input.pathname ?? "",
+          ...input.context,
         },
       },
       signal: controller.signal,
