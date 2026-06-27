@@ -165,7 +165,11 @@ function CuestionarioPage() {
 
     const respuestasFinales = pruneRespuestasFueraDeFlujo(respuestas);
     const idsFlujo = getIdsDelFlujo(respuestasFinales);
-    if (idsFlujo.length !== 6 && idsFlujo.length !== 10 && idsFlujo.length !== 11) {
+    const flujoValido = [6, 10, 11].includes(idsFlujo.length);
+    const todasRespondidas = idsFlujo.every(
+      (id) => respuestasFinales[id] === "si" || respuestasFinales[id] === "no"
+    );
+    if (!flujoValido || !todasRespondidas) {
       toast.error("El cuestionario está incompleto. Revisa todas las preguntas aplicables.");
       return;
     }

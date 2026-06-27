@@ -159,7 +159,8 @@ export function getIdsDelFlujo(
   const ids: number[] = [1];
   if (q1 === "si") ids.push(2, 3, 4, 5);
   ids.push(6, 7, 8, 9, 10);
-  if (respuestas[10] === "si") ids.push(11);
+  // P11 solo aplica con política (P1=Sí) y oficial designado (P10=Sí)
+  if (q1 === "si" && respuestas[10] === "si") ids.push(11);
   return ids;
 }
 
@@ -204,7 +205,7 @@ export function clearRespuestasDependientes(
   const next: Record<number, RespuestaValor> = { ...respuestas, [preguntaId]: valor };
 
   if (preguntaId === 1 && valor === "no") {
-    for (const id of [2, 3, 4, 5]) delete next[id];
+    for (const id of [2, 3, 4, 5, 11]) delete next[id];
   }
   if (preguntaId === 10 && valor === "no") {
     delete next[11];
