@@ -1,6 +1,9 @@
 import { cn } from "@/lib/utils";
 import { Check, X } from "lucide-react";
+import { useEffect } from "react";
 import { getBloque, type PreguntaDiagnostico, type RespuestaValor } from "@/lib/diagnostico";
+import { schedulePrefetchDiagnosticoHelp } from "@/lib/api/diagnostico-help";
+import { useAuth } from "@/lib/auth";
 import { AiAssistant } from "@/components/diagnostico/ai-assistant";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +32,12 @@ export function QuestionCard({
   total,
   showSkipHint,
 }: QuestionCardProps) {
+  const { user } = useAuth();
   const bloque = getBloque(pregunta.bloque);
+
+  useEffect(() => {
+    if (iaActiva && user) schedulePrefetchDiagnosticoHelp([pregunta.id], user);
+  }, [iaActiva, pregunta.id, user]);
   const pesoLabel = pregunta.esComplementaria
     ? "Complementaria · no suma al puntaje"
     : pregunta.peso != null

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bot, Lightbulb, Loader2, RefreshCw, Scale } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import {
-  fetchDiagnosticoHelp,
+  getCachedDiagnosticoHelp,
+  getDiagnosticoHelp,
   getStaticDiagnosticoHelp,
   type DiagnosticoHelpType,
 } from "@/lib/api/diagnostico-help";
@@ -19,65 +20,108 @@ type AiAssistantProps = {
 type HelpState = {
   content: string | null;
   loading: boolean;
+  upgrading: boolean;
   error: string | null;
   fromFallback: boolean;
 };
 
-const emptyHelpState = (): HelpState => ({
-  content: null,
-  loading: false,
-  error: null,
-  fromFallback: false,
-});
+function buildInitialHelpState(
+  pregunta: PreguntaDiagnostico,
+  type: DiagnosticoHelpType,
+  user: ReturnType<typeof useAuth>["user"]
+): HelpState {
+  if (!user) {
+    return {
+      content: getStaticDiagnosticoHelp(pregunta, type),
+      loading: false,
+      upgrading: false,
+      error: null,
+      fromFallback: true,
+    };
+  }
+
+  const cached = getCachedDiagnosticoHelp(pregunta.id, type);
+  if (cached) {
+    return {
+      content: cached,
+      loading: false,
+      upgrading: false,
+      error: null,
+      fromFallback: false,
+    };
+  }
+
+  return {
+    content: getStaticDiagnosticoHelp(pregunta, type),
+    loading: true,
+    upgrading: true,
+    error: null,
+    fromFallback: true,
+  };
+}
 
 export function AiAssistant({ pregunta, compact }: AiAssistantProps) {
   const { user } = useAuth();
   const [tab, setTab] = useState<DiagnosticoHelpType>("significado");
-  const [help, setHelp] = useState<Record<DiagnosticoHelpType, HelpState>>({
-    significado: emptyHelpState(),
-    evaluacion: emptyHelpState(),
-  });
-  const loadedKeys = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    loadedKeys.current.clear();
-    setHelp({
-      significado: emptyHelpState(),
-      evaluacion: emptyHelpState(),
-    });
-    setTab("significado");
-  }, [pregunta.id]);
+  const [help, setHelp] = useState<Record<DiagnosticoHelpType, HelpState>>(() => ({
+    significado: buildInitialHelpState(pregunta, "significado", user),
+    evaluacion: buildInitialHelpState(pregunta, "evaluacion", user),
+  }));
 
   const loadHelp = useCallback(
     async (type: DiagnosticoHelpType, force = false) => {
       if (!user) return;
 
-      const cacheKey = `${pregunta.id}-${type}`;
-      if (!force && loadedKeys.current.has(cacheKey)) return;
+      const cached = !force ? getCachedDiagnosticoHelp(pregunta.id, type) : null;
+      if (cached) {
+        setHelp((prev) => ({
+          ...prev,
+          [type]: {
+            content: cached,
+            loading: false,
+            upgrading: false,
+            error: null,
+            fromFallback: false,
+          },
+        }));
+        return;
+      }
 
       setHelp((prev) => ({
         ...prev,
-        [type]: { ...prev[type], loading: true, error: null },
+        [type]: {
+          content: prev[type].content ?? getStaticDiagnosticoHelp(pregunta, type),
+          loading: true,
+          upgrading: true,
+          error: null,
+          fromFallback: prev[type].fromFallback,
+        },
       }));
 
       try {
-        const content = await fetchDiagnosticoHelp(pregunta, type, user);
-        loadedKeys.current.add(cacheKey);
+        const { content, fromCache } = await getDiagnosticoHelp(pregunta, type, user, { force });
         setHelp((prev) => ({
           ...prev,
-          [type]: { content, loading: false, error: null, fromFallback: false },
+          [type]: {
+            content,
+            loading: false,
+            upgrading: false,
+            error: null,
+            fromFallback: false,
+          },
         }));
+        if (fromCache) return;
       } catch (err) {
         const message =
           err instanceof ApiError
             ? err.message
             : "No se pudo obtener ayuda de la IA. Mostramos una guía básica.";
-        loadedKeys.current.add(cacheKey);
         setHelp((prev) => ({
           ...prev,
           [type]: {
             content: getStaticDiagnosticoHelp(pregunta, type),
             loading: false,
+            upgrading: false,
             error: message,
             fromFallback: true,
           },
@@ -88,28 +132,19 @@ export function AiAssistant({ pregunta, compact }: AiAssistantProps) {
   );
 
   useEffect(() => {
-    if (user) void loadHelp(tab);
-  }, [tab, pregunta.id, user, loadHelp]);
+    setTab("significado");
+    setHelp({
+      significado: buildInitialHelpState(pregunta, "significado", user),
+      evaluacion: buildInitialHelpState(pregunta, "evaluacion", user),
+    });
+
+    if (!user) return;
+    void loadHelp("significado");
+    void loadHelp("evaluacion");
+  }, [pregunta.id, user, loadHelp]);
 
   function renderTabContent(type: DiagnosticoHelpType) {
     const state = help[type];
-
-    if (!user) {
-      return (
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {getStaticDiagnosticoHelp(pregunta, type)}
-        </p>
-      );
-    }
-
-    if (state.loading) {
-      return (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground py-4 justify-center">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          Consultando asistente IA…
-        </div>
-      );
-    }
 
     if (!state.content) return null;
 
@@ -118,22 +153,27 @@ export function AiAssistant({ pregunta, compact }: AiAssistantProps) {
         <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
           {state.content}
         </p>
-        {state.error && state.fromFallback && (
+        {state.upgrading && state.loading && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Mejorando respuesta con IA…
+          </p>
+        )}
+        {state.error && state.fromFallback && !state.loading && (
           <p className="text-xs text-amber-600 dark:text-amber-400">{state.error}</p>
         )}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs text-muted-foreground"
-          onClick={() => {
-            loadedKeys.current.delete(`${pregunta.id}-${type}`);
-            void loadHelp(type, true);
-          }}
-        >
-          <RefreshCw className="h-3 w-3 mr-1" />
-          Actualizar respuesta
-        </Button>
+        {user && !state.loading && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-muted-foreground"
+            onClick={() => void loadHelp(type, true)}
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Actualizar respuesta
+          </Button>
+        )}
       </>
     );
   }

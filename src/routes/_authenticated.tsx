@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AiChatWidget } from "@/components/chat/ai-chat-widget";
 import { useAuth } from "@/lib/auth";
+import { warmDiagnosticoHelpCache } from "@/lib/api/diagnostico-help";
 import { canAccessRoute, roleLabel } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ShieldCheck } from "lucide-react";
@@ -39,6 +40,10 @@ function AuthLayout() {
       navigate({ to: "/dashboard", replace: true });
     }
   }, [user, pathname, navigate]);
+
+  useEffect(() => {
+    if (user) warmDiagnosticoHelpCache(user);
+  }, [user?.id]);
 
   if (loading || !user) {
     return (

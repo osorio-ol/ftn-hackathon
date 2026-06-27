@@ -17,6 +17,10 @@ import {
 } from "@/lib/diagnostico";
 import { saveEvaluacion, downloadReporte } from "@/lib/history";
 import {
+  prefetchUpcomingFlowHelp,
+  warmDiagnosticoHelpCache,
+} from "@/lib/api/diagnostico-help";
+import {
   submitDiagnosticoFlow,
   type DiagnosticoFlowResult,
   type DiagnosticoPhase,
@@ -91,6 +95,21 @@ function CuestionarioPage() {
       setStep(totalPreguntas);
     }
   }, [step, totalPreguntas]);
+
+  const flowQuestionIds = useMemo(
+    () => getIdsDelFlujo(respuestasMap),
+    [respuestasMap]
+  );
+
+  useEffect(() => {
+    if (!user || !iaActiva) return;
+    warmDiagnosticoHelpCache(user, flowQuestionIds.length ? flowQuestionIds : [1]);
+  }, [user, iaActiva]);
+
+  useEffect(() => {
+    if (!user || !iaActiva || !currentPregunta) return;
+    prefetchUpcomingFlowHelp(flowQuestionIds, currentPregunta.id, user);
+  }, [user, iaActiva, currentPregunta?.id, flowQuestionIds]);
 
   const handleStart = () => {
     if (!responsableWatch || responsableWatch.trim().length < 2) {
