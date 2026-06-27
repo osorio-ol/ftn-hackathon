@@ -2,6 +2,9 @@ import { jsPDF } from "jspdf";
 import type { HistorialItem } from "@/lib/history";
 import type { RecommendationReport } from "@/lib/api/assessments";
 import { normalizeRecommendationReport } from "@/lib/api/assessments";
+import { buildComplianceScore, levelLabel } from "@/lib/compliance/score";
+import { buildRiskMatrixFromBrechas, riskLevelLabel } from "@/lib/compliance/risk-matrix";
+import { buildActionPlan, priorityLabel } from "@/lib/compliance/action-plan";
 
 function asReport(ai?: Record<string, unknown>): RecommendationReport | undefined {
   return normalizeRecommendationReport(ai as RecommendationReport | undefined);
@@ -36,12 +39,42 @@ function addSection(doc: jsPDF, title: string, lines: string[], y: number, margi
   return y + 4;
 }
 
+export function downloadTextAsPdf(title: string, content: string, filename: string) {
+  const doc = new jsPDF();
+  const margin = 20;
+  const maxWidth = doc.internal.pageSize.getWidth() - margin * 2;
+  let y = 20;
+
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text(title, margin, y);
+  y += 10;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const lines = content.split("\n");
+  for (const line of lines) {
+    const wrapped = doc.splitTextToSize(line || " ", maxWidth) as string[];
+    if (y + wrapped.length * 5 > doc.internal.pageSize.getHeight() - 15) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.text(wrapped, margin, y);
+    y += wrapped.length * 5 + 1;
+  }
+
+  doc.save(filename);
+}
+
 export function downloadReportePdf(item: HistorialItem) {
   const doc = new jsPDF();
   const margin = 20;
   const maxWidth = doc.internal.pageSize.getWidth() - margin * 2;
   let y = 20;
   const report = asReport(item.aiReport);
+  const compliance = buildComplianceScore(item.puntaje);
+  const risks = buildRiskMatrixFromBrechas(item.brechas);
+  const actions = buildActionPlan(item.recomendaciones, item.brechas);
 
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
@@ -61,7 +94,8 @@ export function downloadReportePdf(item: HistorialItem) {
       `Empresa: ${item.empresa}`,
       `Responsable: ${item.responsable}`,
       `Fecha: ${item.fecha.slice(0, 10)}`,
-      `Nivel de cumplimiento: ${item.puntaje}%`,
+      `Nivel de cumplimiento: ${item.puntaje}% (${compliance.label})`,
+      `Nivel: ${levelLabel(compliance.level)}`,
       `Estado: ${item.estado}`,
       ...(item.assessmentId ? [`ID evaluacion: ${item.assessmentId}`] : []),
     ],
@@ -89,6 +123,17 @@ export function downloadReportePdf(item: HistorialItem) {
     );
   }
 
+  if (risks.length) {
+    y = addSection(
+      doc,
+      "Matriz de riesgos (incumplimientos criticos)",
+      risks.slice(0, 8).map((r, i) => `${i + 1}. [${riskLevelLabel(r.level)}] ${r.category}: ${r.title}`),
+      y,
+      margin,
+      maxWidth
+    );
+  }
+
   if (item.brechas.length) {
     y = addSection(
       doc,
@@ -100,7 +145,18 @@ export function downloadReportePdf(item: HistorialItem) {
     );
   }
 
-  if (item.recomendaciones.length) {
+  if (actions.length) {
+    y = addSection(
+      doc,
+      report ? "Plan de accion priorizado (IA)" : "Plan de accion",
+      actions.map(
+        (a, i) => `${i + 1}. [${priorityLabel(a.priority)}] ${a.title} (Impacto: ${a.impact}, Urgencia: ${a.urgency})`
+      ),
+      y,
+      margin,
+      maxWidth
+    );
+  } else if (item.recomendaciones.length) {
     y = addSection(
       doc,
       report ? "Plan de accion (IA)" : "Recomendaciones",

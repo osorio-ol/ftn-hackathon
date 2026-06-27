@@ -19,13 +19,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, TrendingUp, Building2, ClipboardCheck, ShieldAlert, ArrowRight } from "lucide-react";
+import { AlertCircle, TrendingUp, Building2, ClipboardCheck, ShieldAlert, ArrowRight, Bell, CheckSquare } from "lucide-react";
 import { listAssessmentsForUser } from "@/lib/api/assessments";
+import { getComplianceProgress } from "@/lib/api/compliance";
 import { buildTrendFromAssessments } from "@/lib/assessment-history";
 import { listCompanies } from "@/lib/api/companies";
 import { useAuth } from "@/lib/auth";
 import { isCompanyUser } from "@/lib/permissions";
 import { ComplianceGauge } from "@/components/diagnostico/compliance-gauge";
+import { buildComplianceScore, levelLabel } from "@/lib/compliance/score";
+import { buildPeriodicAlerts, alertDaysLabel } from "@/lib/compliance/alerts";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -45,6 +50,13 @@ function Dashboard() {
     queryKey: ["companies"],
     queryFn: listCompanies,
     enabled: isAuthenticated && (user?.role === "admin" || user?.role === "auditor"),
+  });
+
+  const latestId = assessments.data?.[0]?.id;
+  const progressQuery = useQuery({
+    queryKey: ["compliance-progress-dashboard", latestId],
+    queryFn: () => getComplianceProgress(latestId),
+    enabled: isAuthenticated && latestId != null,
   });
 
   const isLoading = assessments.isLoading;
@@ -122,6 +134,18 @@ function Dashboard() {
     { label: "No conformes", value: data?.pendientes ?? 0, icon: ShieldAlert },
   ];
 
+  const progress = progressQuery.data;
+  const checklistDone = Object.values(progress?.checklist ?? {}).filter(Boolean).length;
+  const checklistTotal = Object.keys(progress?.checklist ?? {}).length;
+  const checklistPct = checklistTotal ? Math.round((checklistDone / checklistTotal) * 100) : 0;
+  const actionDone = Object.values(progress?.action_status ?? {}).filter((s) => s === "completada").length;
+  const actionTotal = Object.keys(progress?.action_status ?? {}).length;
+  const actionPct = actionTotal ? Math.round((actionDone / actionTotal) * 100) : 0;
+  const alerts = buildPeriodicAlerts(items[0]?.created_at).filter(
+    (a) => !(progress?.dismissed_alerts ?? []).includes(a.id)
+  ).slice(0, 3);
+  const latestScore = items[0] ? buildComplianceScore(items[0].score) : null;
+
   return (
     <div className="space-y-6">
       {user && isCompanyUser(user.role) && (
@@ -162,6 +186,67 @@ function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {latestId && latestScore && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Nivel de cumplimiento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold" style={{ color: latestScore.color }}>
+                {latestScore.percentage}% — {levelLabel(latestScore.level)}
+              </p>
+              <Badge variant="outline" className="mt-2">{latestScore.label}</Badge>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <CheckSquare className="h-4 w-4" /> Checklist
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Progress value={checklistPct} />
+              <p className="text-xs text-muted-foreground">{checklistPct}% implementado</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Plan de acción</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Progress value={actionPct} />
+              <p className="text-xs text-muted-foreground">{actionPct}% completado</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {alerts.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Bell className="h-4 w-4" /> Alertas de cumplimiento
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {alerts.map((a) => (
+              <div key={a.id} className="flex justify-between text-sm rounded-lg border px-3 py-2">
+                <span>{a.title}</span>
+                <span className="text-xs text-muted-foreground">{alertDaysLabel(a.dueDate)}</span>
+              </div>
+            ))}
+            {latestId && (
+              <Button asChild size="sm" variant="outline">
+                <Link to="/cumplimiento/$assessmentId" params={{ assessmentId: String(latestId) }}>
+                  Ver centro de cumplimiento
+                </Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {!data || items.length === 0 ? (
         <Card>
