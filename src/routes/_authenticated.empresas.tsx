@@ -9,25 +9,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Search } from "lucide-react";
-import { evaluacionesMock } from "@/lib/mock-data";
+import { listCompanies } from "@/lib/api/companies";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/empresas")({
   component: EmpresasPage,
 });
 
-async function fetchEvaluaciones() {
-  await new Promise((r) => setTimeout(r, 600));
-  return evaluacionesMock;
-}
-
 const variantFor = (e: string) =>
   e === "Cumple" ? "default" : e === "Parcial" ? "secondary" : "destructive";
 
 function EmpresasPage() {
+  const { isAuthenticated } = useAuth();
   const [q, setQ] = useState("");
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["evaluaciones"],
-    queryFn: fetchEvaluaciones,
+    queryKey: ["companies"],
+    queryFn: listCompanies,
+    enabled: isAuthenticated,
   });
 
   const filtered = useMemo(() => {
@@ -35,9 +33,10 @@ function EmpresasPage() {
     const s = q.toLowerCase();
     return data.filter(
       (e) =>
-        e.empresa.toLowerCase().includes(s) ||
-        e.responsable.toLowerCase().includes(s) ||
-        e.id.toLowerCase().includes(s)
+        e.name.toLowerCase().includes(s) ||
+        e.nit.toLowerCase().includes(s) ||
+        e.sector.toLowerCase().includes(s) ||
+        String(e.id).includes(s)
     );
   }, [data, q]);
 
@@ -46,14 +45,16 @@ function EmpresasPage() {
       <CardHeader>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <CardTitle>Evaluaciones por empresa</CardTitle>
-            <p className="text-sm text-muted-foreground">Listado de autodiagnósticos registrados.</p>
+            <CardTitle>Empresas registradas</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Consulta el estado de cumplimiento y evaluaciones por organización.
+            </p>
           </div>
           <div className="relative w-full max-w-xs">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               className="pl-8"
-              placeholder="Buscar empresa, ID o responsable…"
+              placeholder="Buscar empresa, NIT o sector…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
@@ -72,7 +73,7 @@ function EmpresasPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error al cargar</AlertTitle>
             <AlertDescription className="flex items-center justify-between gap-4">
-              <span>No se pudieron obtener las evaluaciones.</span>
+              <span>No se pudieron obtener las empresas.</span>
               <Button size="sm" variant="outline" onClick={() => refetch()}>
                 Reintentar
               </Button>
@@ -85,16 +86,18 @@ function EmpresasPage() {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Empresa</TableHead>
-                  <TableHead>Responsable</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead className="text-right">Puntaje</TableHead>
+                  <TableHead>NIT</TableHead>
+                  <TableHead>Sector</TableHead>
+                  <TableHead>Tamaño</TableHead>
+                  <TableHead className="text-right">Evaluaciones</TableHead>
+                  <TableHead className="text-right">Último puntaje</TableHead>
                   <TableHead>Estado</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
+                    <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">
                       No se encontraron resultados.
                     </TableCell>
                   </TableRow>
@@ -102,12 +105,22 @@ function EmpresasPage() {
                   filtered.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell className="font-mono text-xs">{row.id}</TableCell>
-                      <TableCell className="font-medium">{row.empresa}</TableCell>
-                      <TableCell>{row.responsable}</TableCell>
-                      <TableCell>{row.fecha}</TableCell>
-                      <TableCell className="text-right">{row.puntaje}%</TableCell>
+                      <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell>{row.nit}</TableCell>
+                      <TableCell>{row.sector}</TableCell>
+                      <TableCell className="capitalize">{row.size}</TableCell>
+                      <TableCell className="text-right">{row.assessment_count}</TableCell>
+                      <TableCell className="text-right">
+                        {row.latest_score != null ? `${Math.round(row.latest_score)}%` : "—"}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant={variantFor(row.estado) as any}>{row.estado}</Badge>
+                        {row.latest_status ? (
+                          <Badge variant={variantFor(row.latest_status) as "default"}>
+                            {row.latest_status}
+                          </Badge>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

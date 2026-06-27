@@ -1,15 +1,17 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { Loader2, LogIn, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
+import { AuthLayout } from "@/components/auth/auth-layout";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { RoleNotice } from "@/components/auth/role-notice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export const Route = createFileRoute("/login")({
@@ -33,59 +35,92 @@ function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } });
 
-  if (user) {
-    navigate({ to: "/dashboard", replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (user) navigate({ to: "/dashboard", replace: true });
+  }, [user, navigate]);
+
+  if (user) return null;
 
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
     try {
       await login(values.email, values.password);
-      toast.success("Bienvenido a CAVALTEC");
+      toast.success("¡Bienvenido a CAVALTEC!");
       navigate({ to: "/dashboard", replace: true });
-    } catch (e: any) {
-      setSubmitError(e?.message ?? "Error de autenticación");
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Error de autenticación");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <ShieldCheck className="h-6 w-6" />
+    <AuthLayout
+      variant="login"
+      title="Inicia sesión"
+      subtitle="Ingresa con tu cuenta de empresa, administrador o auditor"
+      footer={
+        <span>
+          ¿Tu empresa aún no está registrada?{" "}
+          <Link to="/registro" className="text-primary font-semibold hover:underline">
+            Crear cuenta empresa
+          </Link>
+        </span>
+      }
+    >
+      <RoleNotice variant="login" />
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {submitError && (
+          <Alert variant="destructive" className="rounded-xl">
+            <AlertDescription>{submitError}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Correo electrónico</Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="email"
+              type="email"
+              placeholder="tu@empresa.com"
+              className="pl-10 h-11 rounded-xl"
+              {...register("email")}
+            />
           </div>
-          <CardTitle>CAVALTEC</CardTitle>
-          <CardDescription>Autodiagnóstico Ley 1581 — Inicia sesión</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {submitError && (
-              <Alert variant="destructive">
-                <AlertDescription>{submitError}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo</Label>
-              <Input id="email" type="email" placeholder="admin@cavaltec.co" {...register("email")} />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input id="password" type="password" placeholder="••••••" {...register("password")} />
-              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-            </div>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Ingresar
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              Demo: cualquier correo válido y contraseña de 4+ caracteres. Usa <code>admin@</code> para rol admin.
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="password">Contraseña</Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              className="pl-10 h-11 rounded-xl"
+              {...register("password")}
+            />
+          </div>
+          {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+          <div className="text-right">
+            <Link to="/recuperar-clave" className="text-xs text-primary hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+        </div>
+
+        <Button type="submit" className="w-full h-11 rounded-xl text-base" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <LogIn className="mr-2 h-4 w-4" />
+          )}
+          Ingresar
+        </Button>
+      </form>
+
+      <OAuthButtons />
+    </AuthLayout>
   );
 }
