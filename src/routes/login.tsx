@@ -110,7 +110,7 @@ function LoginPage() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-11 rounded-xl text-base" disabled={isSubmitting}>
+        <Button type="submit" className="w-full h-11 rounded-xl text-base shadow-sm" disabled={isSubmitting}>
           {isSubmitting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (

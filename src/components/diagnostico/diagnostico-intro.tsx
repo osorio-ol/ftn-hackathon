@@ -64,7 +64,7 @@ export function DiagnosticoIntro({
         </div>
       </div>
 
-      <Button size="lg" className="w-full sm:w-auto px-10 rounded-full" onClick={onStart} type="button">
+      <Button size="lg" className="w-full sm:w-auto px-10 rounded-xl shadow-sm" onClick={onStart} type="button">
         Comenzar diagnóstico →
       </Button>
     </div>

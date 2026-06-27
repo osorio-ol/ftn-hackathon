@@ -8,8 +8,8 @@ type RoleNoticeProps = {
 export function RoleNotice({ variant }: RoleNoticeProps) {
   if (variant === "register") {
     return (
-      <Alert className="border-primary/20 bg-primary/5">
-        <Building2 className="h-4 w-4 text-primary" />
+    <Alert className="rounded-xl border-primary/20 bg-primary/5">
+      <Building2 className="h-4 w-4 text-primary" />
         <AlertDescription className="text-xs leading-relaxed text-muted-foreground ml-2">
           <strong className="text-foreground">Registro solo para empresas.</strong> Al crear tu cuenta
           obtendrás un perfil <span className="font-medium text-primary">Empresa</span> con acceso al
@@ -22,7 +22,7 @@ export function RoleNotice({ variant }: RoleNoticeProps) {
   }
 
   return (
-    <Alert className="border-muted bg-muted/30">
+    <Alert className="rounded-xl border-muted bg-muted/30">
       <Info className="h-4 w-4" />
       <AlertDescription className="text-xs leading-relaxed text-muted-foreground ml-2">
         <span className="inline-flex items-center gap-1 font-medium text-foreground">

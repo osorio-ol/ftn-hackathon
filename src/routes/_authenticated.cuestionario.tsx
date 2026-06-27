@@ -203,6 +203,12 @@ function CuestionarioPage() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl mx-auto min-h-[60vh] flex flex-col">
+      {step === 0 && (
+        <div className="mb-2 text-center md:text-left">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">Autodiagnóstico</p>
+          <h1 className="mt-1 text-lg font-bold tracking-tight">Ley 1581 de 2012</h1>
+        </div>
+      )}
       {step > 0 && (
         <DiagnosticoProgress
           step={step}
@@ -246,20 +252,20 @@ function CuestionarioPage() {
       </div>
 
       {step > 0 && (
-        <div className="sticky bottom-0 -mx-4 md:-mx-6 px-4 md:px-6 py-4 bg-background/90 backdrop-blur-md border-t">
+        <div className="sticky bottom-0 -mx-4 md:-mx-6 px-4 md:px-6 py-4 bg-background/90 backdrop-blur-md border-t border-border/80">
           <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
-            <Button type="button" variant="ghost" onClick={goPrev} disabled={step <= 1} className="rounded-full">
+            <Button type="button" variant="ghost" onClick={goPrev} disabled={step <= 1} className="rounded-lg">
               <ArrowLeft className="mr-1 h-4 w-4" />
               Anterior
             </Button>
 
             {step < totalPreguntas ? (
-              <Button type="button" onClick={goNext} className="rounded-full px-6">
+              <Button type="button" onClick={goNext} className="rounded-lg px-6 shadow-sm">
                 Siguiente
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={isSubmitting || !!loadingPhase} className="rounded-full px-6">
+              <Button type="submit" disabled={isSubmitting || !!loadingPhase} className="rounded-lg px-6 shadow-sm">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Ver mi resultado
               </Button>

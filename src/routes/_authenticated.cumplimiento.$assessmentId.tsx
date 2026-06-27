@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, ShieldCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -119,31 +121,51 @@ function CumplimientoPage() {
   }
 
   return (
-    <div className="max-w-4xl space-y-4">
+    <div className="max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="ghost" size="sm" className="rounded-lg">
           <Link to="/recomendaciones/$assessmentId" params={{ assessmentId: String(id) }}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver al informe
           </Link>
         </Button>
-        <Button size="sm" onClick={() => downloadReporte(item)}>
+        <Button size="sm" className="rounded-lg shadow-sm" onClick={() => downloadReporte(item)}>
           <Download className="mr-2 h-4 w-4" />
           Descargar PDF completo
         </Button>
       </div>
 
-      <div>
-        <h1 className="text-xl font-semibold">Centro de cumplimiento</h1>
-        <p className="text-sm text-muted-foreground">
-          {item.empresa} · Evaluación #{id} · Checklist {checklistPct}% · Plan {actionPct}%
-        </p>
-      </div>
+      <Card className="overflow-hidden border-primary/15 bg-gradient-to-br from-primary/[0.07] via-card to-card shadow-sm">
+        <CardContent className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Centro de cumplimiento</h1>
+                <p className="text-sm text-muted-foreground">{item.empresa}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary" className="font-normal">
+                Evaluación #{id}
+              </Badge>
+              <Badge variant="outline" className="font-normal">
+                Checklist {checklistPct}%
+              </Badge>
+              <Badge variant="outline" className="font-normal">
+                Plan {actionPct}%
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <ComplianceScoreCard puntaje={item.puntaje} />
 
       <Tabs defaultValue="riesgos">
-        <TabsList className="flex flex-wrap h-auto gap-1">
+        <TabsList className="flex h-auto flex-wrap gap-1 rounded-xl bg-muted/50 p-1">
           <TabsTrigger value="riesgos">Riesgos</TabsTrigger>
           <TabsTrigger value="plan">Plan de acción</TabsTrigger>
           <TabsTrigger value="documentos">Documentos</TabsTrigger>
