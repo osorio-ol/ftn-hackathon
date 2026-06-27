@@ -9,7 +9,9 @@ import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api/client";
 import {
   clearRespuestasDependientes,
+  getIdsDelFlujo,
   getPreguntasActivas,
+  pruneRespuestasFueraDeFlujo,
   preguntasDiagnostico,
   type RespuestaValor,
 } from "@/lib/diagnostico";
@@ -161,12 +163,19 @@ function CuestionarioPage() {
       return;
     }
 
+    const respuestasFinales = pruneRespuestasFueraDeFlujo(respuestas);
+    const idsFlujo = getIdsDelFlujo(respuestasFinales);
+    if (idsFlujo.length !== 6 && idsFlujo.length !== 10 && idsFlujo.length !== 11) {
+      toast.error("El cuestionario está incompleto. Revisa todas las preguntas aplicables.");
+      return;
+    }
+
     setLoadingPhase("saving");
     try {
       const flowResult = await submitDiagnosticoFlow({
         user,
         responsable: values.responsable,
-        respuestas,
+        respuestas: respuestasFinales,
         onPhaseChange: setLoadingPhase,
       });
 
@@ -322,7 +331,7 @@ function CuestionarioPage() {
               Anterior
             </Button>
 
-            {step < totalPreguntas ? (
+            {step < totalPreguntas || answeredCount < totalPreguntas ? (
               <Button type="button" onClick={goNext} className="rounded-lg px-6 shadow-sm">
                 Siguiente
                 <ArrowRight className="ml-1 h-4 w-4" />

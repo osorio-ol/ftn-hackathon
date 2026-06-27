@@ -149,14 +149,50 @@ export function getBloque(bloqueId: BloqueId): BloqueDiagnostico {
   return bloquesDiagnostico.find((b) => b.id === bloqueId)!;
 }
 
-/** Preguntas visibles según respuestas condicionales. */
+/** IDs del flujo según ramas respondidas (6, 10 u 11 preguntas). */
+export function getIdsDelFlujo(
+  respuestas: Record<number, RespuestaValor | undefined>
+): number[] {
+  const q1 = respuestas[1];
+  if (q1 !== "si" && q1 !== "no") return [];
+
+  const ids: number[] = [1];
+  if (q1 === "si") ids.push(2, 3, 4, 5);
+  ids.push(6, 7, 8, 9, 10);
+  if (respuestas[10] === "si") ids.push(11);
+  return ids;
+}
+
+/** Preguntas visibles en el flujo actual (secuencial, no adelanta bloques). */
 export function getPreguntasActivas(
   respuestas: Record<number, RespuestaValor | undefined>
 ): PreguntaDiagnostico[] {
-  return preguntasDiagnostico.filter((p) => {
-    if (!p.condicional) return true;
-    return respuestas[p.condicional.preguntaId] === p.condicional.respuesta;
-  });
+  const q1 = respuestas[1];
+  if (q1 !== "si" && q1 !== "no") {
+    return [preguntasDiagnostico[0]];
+  }
+
+  return getIdsDelFlujo(respuestas).map(
+    (id) => preguntasDiagnostico.find((p) => p.id === id)!
+  );
+}
+
+/** Elimina respuestas que ya no pertenecen a la rama activa. */
+export function pruneRespuestasFueraDeFlujo(
+  respuestas: Record<number, RespuestaValor | undefined>
+): Record<number, RespuestaValor> {
+  const ids = getIdsDelFlujo(respuestas);
+  if (!ids.length) {
+    const q1 = respuestas[1];
+    return q1 ? { 1: q1 } : {};
+  }
+
+  const next: Record<number, RespuestaValor> = {};
+  for (const id of ids) {
+    const value = respuestas[id];
+    if (value === "si" || value === "no") next[id] = value;
+  }
+  return next;
 }
 
 /** Limpia respuestas dependientes al cambiar una pregunta compuerta. */
@@ -173,11 +209,8 @@ export function clearRespuestasDependientes(
   if (preguntaId === 10 && valor === "no") {
     delete next[11];
   }
-  if (preguntaId === 1 && valor === "si") {
-    // Sin acción: las subpreguntas se mostrarán en el flujo.
-  }
 
-  return next;
+  return pruneRespuestasFueraDeFlujo(next);
 }
 
 export function calcularPuntaje(respuestas: Record<number, RespuestaValor | undefined>): {

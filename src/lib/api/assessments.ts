@@ -4,7 +4,7 @@ import type { User } from "@/lib/auth";
 
 import type { RespuestaValor } from "@/lib/diagnostico";
 
-import { getPreguntasActivas } from "@/lib/diagnostico";
+import { getIdsDelFlujo, pruneRespuestasFueraDeFlujo } from "@/lib/diagnostico";
 
 
 export type AssessmentAnswer = {
@@ -235,9 +235,11 @@ export function buildAssessmentPayload(
 
 ): CreateAssessmentPayload {
 
-  const answers = getPreguntasActivas(respuestas).map((p) => ({
-    question_number: p.id,
-    answer: respuestas[p.id] === "si",
+  const sanitized = pruneRespuestasFueraDeFlujo(respuestas);
+  const ids = getIdsDelFlujo(sanitized);
+  const answers = ids.map((id) => ({
+    question_number: id,
+    answer: sanitized[id] === "si",
   }));
 
 
