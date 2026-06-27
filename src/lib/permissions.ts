@@ -16,6 +16,7 @@ const routeRoles: Record<string, Role[]> = {
   "/perfil": ["admin", "company", "evaluador"],
   "/admin": ["admin"],
   "/recomendaciones": ["admin", "company", "evaluador", "auditor"],
+  "/cumplimiento": ["admin", "company", "evaluador", "auditor"],
 };
 
 export function canAccessRoute(role: Role, path: string): boolean {

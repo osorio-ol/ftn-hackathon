@@ -143,10 +143,17 @@ function RecomendacionesPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <ReportDetail item={item} />
-          <Button className="w-full rounded-xl" onClick={() => downloadReporte(item)}>
-            <Download className="mr-2 h-4 w-4" />
-            Descargar PDF
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button asChild variant="secondary" className="flex-1 rounded-xl">
+              <Link to="/cumplimiento/$assessmentId" params={{ assessmentId: String(id) }}>
+                Centro de cumplimiento
+              </Link>
+            </Button>
+            <Button className="flex-1 rounded-xl" onClick={() => downloadReporte(item)}>
+              <Download className="mr-2 h-4 w-4" />
+              Descargar PDF
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

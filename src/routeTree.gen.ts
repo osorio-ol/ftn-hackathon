@@ -23,6 +23,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCuestionarioRouteImport } from './routes/_authenticated.cuestionario'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedRecomendacionesAssessmentIdRouteImport } from './routes/_authenticated.recomendaciones.$assessmentId'
+import { Route as AuthenticatedCumplimientoAssessmentIdRouteImport } from './routes/_authenticated.cumplimiento.$assessmentId'
 
 const RegistroRoute = RegistroRouteImport.update({
   id: '/registro',
@@ -96,6 +97,12 @@ const AuthenticatedRecomendacionesAssessmentIdRoute =
     path: '/recomendaciones/$assessmentId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedCumplimientoAssessmentIdRoute =
+  AuthenticatedCumplimientoAssessmentIdRouteImport.update({
+    id: '/cumplimiento/$assessmentId',
+    path: '/cumplimiento/$assessmentId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/historial': typeof AuthenticatedHistorialRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/reportes': typeof AuthenticatedReportesRoute
+  '/cumplimiento/$assessmentId': typeof AuthenticatedCumplimientoAssessmentIdRoute
   '/recomendaciones/$assessmentId': typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
 export interface FileRoutesByTo {
@@ -125,6 +133,7 @@ export interface FileRoutesByTo {
   '/historial': typeof AuthenticatedHistorialRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/reportes': typeof AuthenticatedReportesRoute
+  '/cumplimiento/$assessmentId': typeof AuthenticatedCumplimientoAssessmentIdRoute
   '/recomendaciones/$assessmentId': typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
 export interface FileRoutesById {
@@ -142,6 +151,7 @@ export interface FileRoutesById {
   '/_authenticated/historial': typeof AuthenticatedHistorialRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/reportes': typeof AuthenticatedReportesRoute
+  '/_authenticated/cumplimiento/$assessmentId': typeof AuthenticatedCumplimientoAssessmentIdRoute
   '/_authenticated/recomendaciones/$assessmentId': typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
 export interface FileRouteTypes {
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/historial'
     | '/perfil'
     | '/reportes'
+    | '/cumplimiento/$assessmentId'
     | '/recomendaciones/$assessmentId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/historial'
     | '/perfil'
     | '/reportes'
+    | '/cumplimiento/$assessmentId'
     | '/recomendaciones/$assessmentId'
   id:
     | '__root__'
@@ -190,6 +202,7 @@ export interface FileRouteTypes {
     | '/_authenticated/historial'
     | '/_authenticated/perfil'
     | '/_authenticated/reportes'
+    | '/_authenticated/cumplimiento/$assessmentId'
     | '/_authenticated/recomendaciones/$assessmentId'
   fileRoutesById: FileRoutesById
 }
@@ -301,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRecomendacionesAssessmentIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/cumplimiento/$assessmentId': {
+      id: '/_authenticated/cumplimiento/$assessmentId'
+      path: '/cumplimiento/$assessmentId'
+      fullPath: '/cumplimiento/$assessmentId'
+      preLoaderRoute: typeof AuthenticatedCumplimientoAssessmentIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -313,6 +333,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedHistorialRoute: typeof AuthenticatedHistorialRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedReportesRoute: typeof AuthenticatedReportesRoute
+  AuthenticatedCumplimientoAssessmentIdRoute: typeof AuthenticatedCumplimientoAssessmentIdRoute
   AuthenticatedRecomendacionesAssessmentIdRoute: typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
 
@@ -325,6 +346,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedHistorialRoute: AuthenticatedHistorialRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedReportesRoute: AuthenticatedReportesRoute,
+  AuthenticatedCumplimientoAssessmentIdRoute:
+    AuthenticatedCumplimientoAssessmentIdRoute,
   AuthenticatedRecomendacionesAssessmentIdRoute:
     AuthenticatedRecomendacionesAssessmentIdRoute,
 }
