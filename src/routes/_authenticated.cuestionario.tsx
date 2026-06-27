@@ -6,14 +6,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import {
-  calcularPuntaje,
-  generarRecomendaciones,
-  preguntasDiagnostico,
-  type RespuestaValor,
-} from "@/lib/diagnostico";
+import { ApiError } from "@/lib/api/client";
+import { preguntasDiagnostico, type RespuestaValor } from "@/lib/diagnostico";
 import { saveEvaluacion, downloadReporte } from "@/lib/history";
+import {
+  submitDiagnosticoFlow,
+  type DiagnosticoFlowResult,
+  type DiagnosticoPhase,
+} from "@/lib/services/diagnostico-flow";
 import { DiagnosticoIntro } from "@/components/diagnostico/diagnostico-intro";
+import { DiagnosticoLoading } from "@/components/diagnostico/diagnostico-loading";
 import { DiagnosticoProgress } from "@/components/diagnostico/diagnostico-progress";
 import { DiagnosticoResults } from "@/components/diagnostico/diagnostico-results";
 import { QuestionCard } from "@/components/diagnostico/question-card";
@@ -29,18 +31,13 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-type Resultado = ReturnType<typeof calcularPuntaje> & {
-  recomendaciones: string[];
-  empresa: string;
-  responsable: string;
-  historialId: string;
-};
 
 function CuestionarioPage() {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [iaActiva, setIaActiva] = useState(true);
-  const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [loadingPhase, setLoadingPhase] = useState<DiagnosticoPhase | null>(null);
+  const [resultado, setResultado] = useState<(DiagnosticoFlowResult & { historialId: string; empresa: string; responsable: string }) | null>(null);
 
   const empresa = user?.company_name ?? "Empresa";
   const totalPreguntas = preguntasDiagnostico.length;
@@ -87,9 +84,7 @@ function CuestionarioPage() {
         return;
       }
     }
-    if (step < totalPreguntas) {
-      setStep((s) => s + 1);
-    }
+    if (step < totalPreguntas) setStep((s) => s + 1);
   };
 
   const goPrev = () => {
@@ -104,6 +99,11 @@ function CuestionarioPage() {
   };
 
   const onSubmit = async (values: FormValues) => {
+    if (!user) {
+      toast.error("Debes iniciar sesión para guardar el diagnóstico");
+      return;
+    }
+
     const sinResponder = preguntasDiagnostico.filter((p) => !values.respuestas?.[String(p.id)]);
     if (sinResponder.length > 0) {
       toast.error(`Faltan ${sinResponder.length} preguntas por responder`);
@@ -111,32 +111,57 @@ function CuestionarioPage() {
       return;
     }
 
-    await new Promise((r) => setTimeout(r, 400));
     const map: Record<number, RespuestaValor | undefined> = {};
     for (const [k, v] of Object.entries(values.respuestas ?? {})) {
       if (v) map[Number(k)] = v;
     }
-    const calc = calcularPuntaje(map);
-    const recomendaciones = generarRecomendaciones(calc.brechas);
-    const saved = saveEvaluacion({
-      empresa,
-      responsable: values.responsable,
-      puntaje: calc.puntaje,
-      estado: calc.estado,
-      brechas: calc.brechas,
-      recomendaciones,
-      porBloque: { cumplimiento: calc.puntaje },
-      companyId: user?.company_id,
-    });
-    setResultado({
-      ...calc,
-      recomendaciones,
-      empresa,
-      responsable: values.responsable,
-      historialId: saved.id,
-    });
-    toast.success("¡Diagnóstico completado!");
+
+    setLoadingPhase("saving");
+    try {
+      const flowResult = await submitDiagnosticoFlow({
+        user,
+        responsable: values.responsable,
+        respuestas: map,
+        onPhaseChange: setLoadingPhase,
+      });
+
+      const saved = saveEvaluacion({
+        empresa,
+        responsable: values.responsable,
+        puntaje: flowResult.puntaje,
+        estado: flowResult.estado,
+        brechas: flowResult.brechas,
+        recomendaciones: flowResult.recomendaciones,
+        porBloque: { cumplimiento: flowResult.puntaje },
+        companyId: user.company_id,
+        assessmentId: flowResult.assessmentId,
+        aiReport: flowResult.aiReport ?? undefined,
+      });
+
+      setResultado({
+        ...flowResult,
+        empresa,
+        responsable: values.responsable,
+        historialId: saved.id,
+      });
+
+      if (flowResult.aiError) {
+        toast.warning("Diagnóstico guardado", { description: flowResult.aiError });
+      } else {
+        toast.success("¡Diagnóstico completado con recomendaciones IA!");
+      }
+    } catch (err) {
+      const msg =
+        err instanceof ApiError ? err.message : "Ocurrió un error al procesar tu diagnóstico.";
+      toast.error(msg);
+    } finally {
+      setLoadingPhase(null);
+    }
   };
+
+  if (loadingPhase) {
+    return <DiagnosticoLoading phase={loadingPhase} />;
+  }
 
   if (resultado) {
     return (
@@ -149,6 +174,8 @@ function CuestionarioPage() {
         totalPreguntas={resultado.totalPreguntas}
         brechas={resultado.brechas}
         recomendaciones={resultado.recomendaciones}
+        aiReport={resultado.aiReport}
+        aiError={resultado.aiError}
         onDownload={() =>
           downloadReporte({
             id: resultado.historialId,
@@ -161,6 +188,8 @@ function CuestionarioPage() {
             recomendaciones: resultado.recomendaciones,
             porBloque: { cumplimiento: resultado.puntaje },
             companyId: user?.company_id,
+            assessmentId: resultado.assessmentId,
+            aiReport: resultado.aiReport ?? undefined,
           })
         }
         onReset={() => {
@@ -182,22 +211,18 @@ function CuestionarioPage() {
           totalQuestions={totalPreguntas}
           iaActiva={iaActiva}
           onIaToggle={setIaActiva}
-          label={
-            currentPregunta
-              ? `Pregunta ${step} de ${totalPreguntas}`
-              : undefined
-          }
+          label={currentPregunta ? `Pregunta ${step} de ${totalPreguntas}` : undefined}
         />
       )}
 
       <div className="flex-1 py-6 md:py-10">
         {step === 0 && (
           <DiagnosticoIntro
-              empresa={empresa}
-              responsable={responsableWatch}
-              onResponsableChange={(v) => setValue("responsable", v)}
-              responsableError={errors.responsable?.message}
-              onStart={handleStart}
+            empresa={empresa}
+            responsable={responsableWatch}
+            onResponsableChange={(v) => setValue("responsable", v)}
+            responsableError={errors.responsable?.message}
+            onStart={handleStart}
             totalPreguntas={totalPreguntas}
           />
         )}
@@ -234,7 +259,7 @@ function CuestionarioPage() {
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={isSubmitting} className="rounded-full px-6">
+              <Button type="submit" disabled={isSubmitting || !!loadingPhase} className="rounded-full px-6">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Ver mi resultado
               </Button>

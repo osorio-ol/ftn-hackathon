@@ -20,6 +20,21 @@ export function RoleNotice({ variant }: RoleNoticeProps) {
       </Alert>
     );
   }
+
+  return (
+    <Alert className="border-muted bg-muted/30">
+      <Info className="h-4 w-4" />
+      <AlertDescription className="text-xs leading-relaxed text-muted-foreground ml-2">
+        <span className="inline-flex items-center gap-1 font-medium text-foreground">
+          <UserCog className="h-3 w-3" /> Demo:
+        </span>{" "}
+        Admin <code className="text-[10px]">admin@gmail.com</code> /{" "}
+        <code className="text-[10px]">12345</code> · Auditor{" "}
+        <code className="text-[10px]">auditor@gmail.com</code> /{" "}
+        <code className="text-[10px]">12345</code>
+      </AlertDescription>
+    </Alert>
+  );
 }
 
 export function CompanyBadge() {

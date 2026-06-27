@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,10 +35,11 @@ function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } });
 
-  if (user) {
-    navigate({ to: "/dashboard", replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (user) navigate({ to: "/dashboard", replace: true });
+  }, [user, navigate]);
+
+  if (user) return null;
 
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
@@ -102,6 +103,11 @@ function LoginPage() {
             />
           </div>
           {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+          <div className="text-right">
+            <Link to="/recuperar-clave" className="text-xs text-primary hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
         </div>
 
         <Button type="submit" className="w-full h-11 rounded-xl text-base" disabled={isSubmitting}>

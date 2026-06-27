@@ -10,18 +10,28 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegistroRouteImport } from './routes/registro'
+import { Route as RecuperarClaveRouteImport } from './routes/recuperar-clave'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedReportesRouteImport } from './routes/_authenticated.reportes'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated.perfil'
 import { Route as AuthenticatedHistorialRouteImport } from './routes/_authenticated.historial'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated.empresas'
+import { Route as AuthenticatedDiagnosticosRouteImport } from './routes/_authenticated.diagnosticos'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCuestionarioRouteImport } from './routes/_authenticated.cuestionario'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
+import { Route as AuthenticatedRecomendacionesAssessmentIdRouteImport } from './routes/_authenticated.recomendaciones.$assessmentId'
 
 const RegistroRoute = RegistroRouteImport.update({
   id: '/registro',
   path: '/registro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecuperarClaveRoute = RecuperarClaveRouteImport.update({
+  id: '/recuperar-clave',
+  path: '/recuperar-clave',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -43,6 +53,11 @@ const AuthenticatedReportesRoute = AuthenticatedReportesRouteImport.update({
   path: '/reportes',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedHistorialRoute = AuthenticatedHistorialRouteImport.update({
   id: '/historial',
   path: '/historial',
@@ -53,6 +68,12 @@ const AuthenticatedEmpresasRoute = AuthenticatedEmpresasRouteImport.update({
   path: '/empresas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDiagnosticosRoute =
+  AuthenticatedDiagnosticosRouteImport.update({
+    id: '/diagnosticos',
+    path: '/diagnosticos',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -64,77 +85,119 @@ const AuthenticatedCuestionarioRoute =
     path: '/cuestionario',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRecomendacionesAssessmentIdRoute =
+  AuthenticatedRecomendacionesAssessmentIdRouteImport.update({
+    id: '/recomendaciones/$assessmentId',
+    path: '/recomendaciones/$assessmentId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/recuperar-clave': typeof RecuperarClaveRoute
   '/registro': typeof RegistroRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/cuestionario': typeof AuthenticatedCuestionarioRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/diagnosticos': typeof AuthenticatedDiagnosticosRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/historial': typeof AuthenticatedHistorialRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/reportes': typeof AuthenticatedReportesRoute
+  '/recomendaciones/$assessmentId': typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/recuperar-clave': typeof RecuperarClaveRoute
   '/registro': typeof RegistroRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/cuestionario': typeof AuthenticatedCuestionarioRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/diagnosticos': typeof AuthenticatedDiagnosticosRoute
   '/empresas': typeof AuthenticatedEmpresasRoute
   '/historial': typeof AuthenticatedHistorialRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/reportes': typeof AuthenticatedReportesRoute
+  '/recomendaciones/$assessmentId': typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/recuperar-clave': typeof RecuperarClaveRoute
   '/registro': typeof RegistroRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/cuestionario': typeof AuthenticatedCuestionarioRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/diagnosticos': typeof AuthenticatedDiagnosticosRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
   '/_authenticated/historial': typeof AuthenticatedHistorialRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/reportes': typeof AuthenticatedReportesRoute
+  '/_authenticated/recomendaciones/$assessmentId': typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/login'
+    | '/recuperar-clave'
     | '/registro'
+    | '/admin'
     | '/cuestionario'
     | '/dashboard'
+    | '/diagnosticos'
     | '/empresas'
     | '/historial'
+    | '/perfil'
     | '/reportes'
+    | '/recomendaciones/$assessmentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
+    | '/recuperar-clave'
     | '/registro'
+    | '/admin'
     | '/cuestionario'
     | '/dashboard'
+    | '/diagnosticos'
     | '/empresas'
     | '/historial'
+    | '/perfil'
     | '/reportes'
+    | '/recomendaciones/$assessmentId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/recuperar-clave'
     | '/registro'
+    | '/_authenticated/admin'
     | '/_authenticated/cuestionario'
     | '/_authenticated/dashboard'
+    | '/_authenticated/diagnosticos'
     | '/_authenticated/empresas'
     | '/_authenticated/historial'
+    | '/_authenticated/perfil'
     | '/_authenticated/reportes'
+    | '/_authenticated/recomendaciones/$assessmentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  RecuperarClaveRoute: typeof RecuperarClaveRoute
   RegistroRoute: typeof RegistroRoute
 }
 
@@ -145,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/registro'
       fullPath: '/registro'
       preLoaderRoute: typeof RegistroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recuperar-clave': {
+      id: '/recuperar-clave'
+      path: '/recuperar-clave'
+      fullPath: '/recuperar-clave'
+      preLoaderRoute: typeof RecuperarClaveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -175,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/historial': {
       id: '/_authenticated/historial'
       path: '/historial'
@@ -187,6 +264,13 @@ declare module '@tanstack/react-router' {
       path: '/empresas'
       fullPath: '/empresas'
       preLoaderRoute: typeof AuthenticatedEmpresasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/diagnosticos': {
+      id: '/_authenticated/diagnosticos'
+      path: '/diagnosticos'
+      fullPath: '/diagnosticos'
+      preLoaderRoute: typeof AuthenticatedDiagnosticosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -203,23 +287,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCuestionarioRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/recomendaciones/$assessmentId': {
+      id: '/_authenticated/recomendaciones/$assessmentId'
+      path: '/recomendaciones/$assessmentId'
+      fullPath: '/recomendaciones/$assessmentId'
+      preLoaderRoute: typeof AuthenticatedRecomendacionesAssessmentIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCuestionarioRoute: typeof AuthenticatedCuestionarioRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDiagnosticosRoute: typeof AuthenticatedDiagnosticosRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
   AuthenticatedHistorialRoute: typeof AuthenticatedHistorialRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedReportesRoute: typeof AuthenticatedReportesRoute
+  AuthenticatedRecomendacionesAssessmentIdRoute: typeof AuthenticatedRecomendacionesAssessmentIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCuestionarioRoute: AuthenticatedCuestionarioRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDiagnosticosRoute: AuthenticatedDiagnosticosRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,
   AuthenticatedHistorialRoute: AuthenticatedHistorialRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedReportesRoute: AuthenticatedReportesRoute,
+  AuthenticatedRecomendacionesAssessmentIdRoute:
+    AuthenticatedRecomendacionesAssessmentIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -230,6 +337,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  RecuperarClaveRoute: RecuperarClaveRoute,
   RegistroRoute: RegistroRoute,
 }
 export const routeTree = rootRouteImport

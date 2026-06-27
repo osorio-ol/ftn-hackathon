@@ -1,67 +1,56 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { isCompanyUser } from "@/lib/permissions";
-import { getHistorial, downloadReporte } from "@/lib/history";
-import { evaluacionesMock, empresasMock } from "@/lib/mock-data";
+import { listAssessmentsForUser } from "@/lib/api/assessments";
+import { assessmentToHistorial, loadAssessmentReport } from "@/lib/assessment-history";
+import { downloadReporte, type HistorialItem } from "@/lib/history";
+import { ReportViewerDialog } from "@/components/report/report-viewer-dialog";
 
 export const Route = createFileRoute("/_authenticated/reportes")({
   component: ReportesPage,
 });
 
 function ReportesPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [viewItem, setViewItem] = useState<HistorialItem | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["reportes", user?.company_id, user?.role],
-    queryFn: async () => {
-      await new Promise((r) => setTimeout(r, 300));
-      const local = getHistorial(user && isCompanyUser(user.role) ? user.company_id : undefined);
-
-      if (user && isCompanyUser(user.role)) {
-        return local.map((item) => ({
-          empresa: item.empresa,
-          evaluaciones: 1,
-          promedio: item.puntaje,
-          ultima: item.fecha.slice(0, 10),
-          raw: item,
-        }));
-      }
-
-      const empresas = [...new Set([...empresasMock, ...local.map((i) => i.empresa)])];
-      return empresas.map((emp) => {
-        const items = [
-          ...evaluacionesMock.filter((e) => e.empresa === emp),
-          ...local.filter((i) => i.empresa === emp),
-        ];
-        const prom = items.length
-          ? Math.round(items.reduce((a, b) => a + b.puntaje, 0) / items.length)
-          : 0;
-        const latest = local.find((i) => i.empresa === emp);
-        return {
-          empresa: emp,
-          evaluaciones: items.length,
-          promedio: prom,
-          ultima: latest?.fecha.slice(0, 10) ?? "—",
-          raw: latest ?? null,
-        };
-      });
-    },
+    queryKey: ["assessments", user?.company_id, user?.role],
+    queryFn: () => listAssessmentsForUser(user),
+    enabled: isAuthenticated,
   });
 
-  const hasReports = useMemo(() => (data?.length ?? 0) > 0, [data]);
+  const withAi = useMemo(
+    () => (data ?? []).filter((a) => a.has_recommendation),
+    [data]
+  );
+
+  const openReport = async (assessmentId: number) => {
+    const a = withAi.find((x) => x.id === assessmentId);
+    if (!a) return;
+    try {
+      const report = await loadAssessmentReport(assessmentId);
+      setViewItem(assessmentToHistorial(a, report, user?.name));
+    } catch {
+      toast.error("No se pudo cargar el informe. Intenta de nuevo.");
+    }
+  };
 
   return (
     <div className="space-y-4">
       {user && isCompanyUser(user.role) && (
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="flex items-center justify-between py-4">
-            <p className="text-sm">Realiza un nuevo autodiagnóstico para generar reportes actualizados.</p>
+            <p className="text-sm">
+              Tras completar el autodiagnóstico verás aquí el informe con recomendaciones IA.
+            </p>
             <Button asChild size="sm">
               <Link to="/cuestionario">
                 <Plus className="mr-2 h-4 w-4" />
@@ -76,7 +65,7 @@ function ReportesPage() {
         <CardHeader>
           <CardTitle>Reportes descargables</CardTitle>
           <CardDescription>
-            Informes de cumplimiento Ley 1581 — fase de diseño (formato JSON exportable).
+            Informes de cumplimiento Ley 1581 con recomendaciones del modelo IA — formato PDF.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -86,44 +75,55 @@ function ReportesPage() {
                 <Skeleton key={i} className="h-14 w-full" />
               ))}
             </div>
-          ) : !hasReports ? (
+          ) : withAi.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
               No hay reportes disponibles. Completa un autodiagnóstico primero.
             </p>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
-              {data!.map((r) => (
+              {withAi.map((r) => (
                 <div
-                  key={r.empresa}
-                  className="flex items-center justify-between rounded-lg border bg-card p-4"
+                  key={r.id}
+                  className="flex items-center justify-between rounded-lg border bg-card p-4 gap-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                       <FileText className="h-5 w-5" />
                     </div>
-                    <div>
-                      <p className="font-medium">{r.empresa}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{r.company_name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {r.evaluaciones} evaluaciones · {r.promedio}% promedio
-                        {r.ultima !== "—" && ` · Última: ${r.ultima}`}
+                        {Math.round(r.score)}% · {r.created_at.slice(0, 10)} · Con IA
                       </p>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={!r.raw}
-                    onClick={() => r.raw && downloadReporte(r.raw)}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Descargar
-                  </Button>
+                  <div className="flex shrink-0 gap-1">
+                    <Button size="sm" variant="outline" onClick={() => void openReport(r.id)}>
+                      Ver
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        const report = await loadAssessmentReport(r.id);
+                        downloadReporte(assessmentToHistorial(r, report, user?.name));
+                      }}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <ReportViewerDialog
+        item={viewItem}
+        open={!!viewItem}
+        onOpenChange={(open) => !open && setViewItem(null)}
+      />
     </div>
   );
 }
