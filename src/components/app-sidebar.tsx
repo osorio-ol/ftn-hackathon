@@ -7,6 +7,9 @@ import {
   History,
   LogOut,
   ShieldCheck,
+  UserCircle,
+  Settings,
+  ListChecks,
 } from "lucide-react";
 import {
   Sidebar,
@@ -29,8 +32,11 @@ const icons = {
   Dashboard: LayoutDashboard,
   Empresas: Building2,
   Autodiagnóstico: ClipboardList,
+  Diagnósticos: ListChecks,
   Historial: History,
   Reportes: FileBarChart2,
+  "Perfil empresa": UserCircle,
+  Administración: Settings,
 } as const;
 
 export function AppSidebar() {
@@ -60,7 +66,7 @@ export function AppSidebar() {
                 const Icon = icons[item.title as keyof typeof icons] ?? LayoutDashboard;
                 return (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={path === item.url}>
+                    <SidebarMenuButton asChild isActive={path === item.url || path.startsWith(`${item.url}/`)}>
                       <Link to={item.url} className="flex items-center gap-2">
                         <Icon className="h-4 w-4" />
                         <span>{item.title}</span>

@@ -1,12 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { isCompanyUser } from "@/lib/permissions";
-import { getHistorial, downloadReporte } from "@/lib/history";
-import { evaluacionesMock } from "@/lib/mock-data";
+import { listAssessmentsForUser } from "@/lib/api/assessments";
+import { loadHistorialItemForAssessment } from "@/lib/assessment-history";
+import { type HistorialItem } from "@/lib/history";
+import { ReportViewerDialog } from "@/components/report/report-viewer-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -15,42 +19,32 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, History } from "lucide-react";
+import { Bot, Download, Eye, History } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/historial")({
   component: HistorialPage,
 });
 
 function HistorialPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [viewItem, setViewItem] = useState<HistorialItem | null>(null);
 
-  const items = useMemo(() => {
-    const local = getHistorial(user && isCompanyUser(user.role) ? user.company_id : undefined);
-    const mock = user && isCompanyUser(user.role) ? [] : evaluacionesMock;
-    const combined = [
-      ...local.map((i) => ({
-        id: i.id,
-        empresa: i.empresa,
-        fecha: i.fecha.slice(0, 10),
-        responsable: i.responsable,
-        puntaje: i.puntaje,
-        estado: i.estado,
-        source: "local" as const,
-        raw: i,
-      })),
-      ...mock.map((i) => ({
-        id: i.id,
-        empresa: i.empresa,
-        fecha: i.fecha,
-        responsable: i.responsable,
-        puntaje: i.puntaje,
-        estado: i.estado,
-        source: "mock" as const,
-        raw: null,
-      })),
-    ];
-    return combined.sort((a, b) => b.fecha.localeCompare(a.fecha));
-  }, [user]);
+  const { data, isLoading } = useQuery({
+    queryKey: ["assessments", user?.company_id, user?.role],
+    queryFn: () => listAssessmentsForUser(user),
+    enabled: isAuthenticated,
+  });
+
+  const items = useMemo(() => data ?? [], [data]);
+
+  const openReport = async (a: (typeof items)[0]) => {
+    try {
+      setViewItem(await loadHistorialItemForAssessment(a, user?.name));
+    } catch {
+      toast.error("No se pudo cargar el informe. Intenta de nuevo.");
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -62,12 +56,18 @@ function HistorialPage() {
           </CardTitle>
           <CardDescription>
             {user && isCompanyUser(user.role)
-              ? `Evaluaciones de ${user.company_name ?? "tu empresa"}`
+              ? `Evaluaciones de ${user.company_name ?? "tu empresa"}.`
               : "Todas las evaluaciones registradas en la plataforma"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {items.length === 0 ? (
+          {isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
               Aún no hay evaluaciones. Completa el autodiagnóstico para ver tu historial.
             </p>
@@ -78,9 +78,10 @@ function HistorialPage() {
                   <TableHead>ID</TableHead>
                   <TableHead>Empresa</TableHead>
                   <TableHead>Fecha</TableHead>
-                  <TableHead>Responsable</TableHead>
                   <TableHead>Puntaje</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead>Riesgo</TableHead>
+                  <TableHead>IA</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -88,34 +89,48 @@ function HistorialPage() {
                 {items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-mono text-xs">{item.id}</TableCell>
-                    <TableCell>{item.empresa}</TableCell>
-                    <TableCell>{item.fecha}</TableCell>
-                    <TableCell>{item.responsable}</TableCell>
-                    <TableCell>{item.puntaje}%</TableCell>
+                    <TableCell>{item.company_name}</TableCell>
+                    <TableCell>{item.created_at.slice(0, 10)}</TableCell>
+                    <TableCell>{Math.round(item.score)}%</TableCell>
                     <TableCell>
                       <Badge
                         variant={
-                          item.estado === "Cumple"
+                          item.status === "Cumple"
                             ? "default"
-                            : item.estado === "Parcial"
+                            : item.status === "Parcial"
                               ? "secondary"
                               : "destructive"
                         }
                       >
-                        {item.estado}
+                        {item.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {item.source === "local" && item.raw && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => downloadReporte(item.raw!)}
-                        >
-                          <Download className="mr-1 h-3 w-3" />
-                          Reporte
-                        </Button>
+                    <TableCell className="text-xs">{item.nivel_riesgo ?? "—"}</TableCell>
+                    <TableCell>
+                      {item.has_recommendation ? (
+                        <Badge variant="outline" className="text-primary border-primary/30">
+                          <Bot className="mr-1 h-3 w-3" />
+                          Sí
+                        </Badge>
+                      ) : (
+                        "—"
                       )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button size="sm" variant="outline" asChild>
+                          <Link
+                            to="/recomendaciones/$assessmentId"
+                            params={{ assessmentId: String(item.id) }}
+                          >
+                            <Eye className="mr-1 h-3 w-3" />
+                            Ver
+                          </Link>
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => void openReport(item)}>
+                          <Download className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -124,6 +139,12 @@ function HistorialPage() {
           )}
         </CardContent>
       </Card>
+
+      <ReportViewerDialog
+        item={viewItem}
+        open={!!viewItem}
+        onOpenChange={(open) => !open && setViewItem(null)}
+      />
     </div>
   );
 }

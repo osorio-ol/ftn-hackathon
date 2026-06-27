@@ -1,8 +1,10 @@
-import { Bot, CheckCircle2, Download, Sparkles, TrendingUp, AlertTriangle } from "lucide-react";
+import { Bot, CheckCircle2, Download, Sparkles, TrendingUp, AlertTriangle, AlertCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { ComplianceGauge } from "@/components/diagnostico/compliance-gauge";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import type { RecommendationReport } from "@/lib/api/assessments";
 
 type DiagnosticoResultsProps = {
   empresa: string;
@@ -13,6 +15,8 @@ type DiagnosticoResultsProps = {
   totalPreguntas: number;
   brechas: string[];
   recomendaciones: string[];
+  aiReport?: RecommendationReport | null;
+  aiError?: string | null;
   onDownload: () => void;
   onReset: () => void;
 };
@@ -46,11 +50,15 @@ export function DiagnosticoResults({
   totalPreguntas,
   brechas,
   recomendaciones,
+  aiReport,
+  aiError,
   onDownload,
   onReset,
 }: DiagnosticoResultsProps) {
   const config = estadoConfig[estado];
   const Icon = config.icon;
+  const fortalezas = aiReport?.fortalezas ?? [];
+  const nivelRiesgo = aiReport?.nivel_riesgo;
 
   return (
     <div className="animate-in fade-in duration-500 max-w-2xl mx-auto space-y-6">
@@ -72,9 +80,47 @@ export function DiagnosticoResults({
           <div>
             <p className={cn("font-semibold", config.color)}>{estado}</p>
             <p className="text-sm text-muted-foreground mt-0.5">{config.message}</p>
+            {nivelRiesgo && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Nivel de riesgo (IA): <strong>{nivelRiesgo}</strong>
+              </p>
+            )}
           </div>
         </div>
       </div>
+
+      {aiError && (
+        <Alert variant="destructive" className="rounded-xl">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{aiError}</AlertDescription>
+        </Alert>
+      )}
+
+      {aiReport?.analisis_general && (
+        <div className="rounded-2xl border bg-card p-5 space-y-2">
+          <h3 className="font-semibold flex items-center gap-2 text-sm">
+            <Bot className="h-4 w-4 text-primary" />
+            Análisis general (IA)
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">{aiReport.analisis_general}</p>
+        </div>
+      )}
+
+      {fortalezas.length > 0 && (
+        <div className="rounded-2xl border bg-card p-5 space-y-3">
+          <h3 className="font-semibold flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+            <CheckCircle2 className="h-4 w-4" />
+            Fortalezas
+          </h3>
+          <ul className="space-y-2">
+            {fortalezas.map((f, i) => (
+              <li key={i} className="text-sm text-muted-foreground rounded-xl bg-green-50 dark:bg-green-950/20 px-3 py-2">
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {brechas.length > 0 && (
         <div className="rounded-2xl border bg-card p-5 space-y-3">
@@ -99,7 +145,7 @@ export function DiagnosticoResults({
       <div className="rounded-2xl border bg-card p-5 space-y-3">
         <h3 className="font-semibold flex items-center gap-2 text-sm">
           <Bot className="h-4 w-4 text-primary" />
-          Plan de acción sugerido
+          {aiReport ? "Plan de acción (IA)" : "Plan de acción sugerido"}
         </h3>
         <ul className="space-y-2">
           {recomendaciones.map((r, i) => (
@@ -119,7 +165,7 @@ export function DiagnosticoResults({
       <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
         <Button onClick={onDownload} variant="outline" className="rounded-full">
           <Download className="mr-2 h-4 w-4" />
-          Descargar reporte
+          Descargar PDF
         </Button>
         <Button asChild variant="outline" className="rounded-full">
           <Link to="/historial">Ver historial</Link>

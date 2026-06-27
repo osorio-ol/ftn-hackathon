@@ -1,3 +1,5 @@
+import { downloadReportePdf } from "@/lib/pdf-report";
+
 export type HistorialItem = {
   id: string;
   empresa: string;
@@ -9,6 +11,8 @@ export type HistorialItem = {
   recomendaciones: string[];
   porBloque: Record<string, number>;
   companyId?: number;
+  assessmentId?: number;
+  aiReport?: Record<string, unknown>;
 };
 
 const KEY = "cavaltec.evaluaciones";
@@ -38,22 +42,5 @@ export function saveEvaluacion(item: Omit<HistorialItem, "id" | "fecha">): Histo
 }
 
 export function downloadReporte(item: HistorialItem) {
-  const contenido = {
-    titulo: "Informe de Autodiagnóstico Ley 1581 — Fase de Diseño",
-    empresa: item.empresa,
-    responsable: item.responsable,
-    fecha: item.fecha,
-    nivel_cumplimiento: `${item.puntaje}%`,
-    estado: item.estado,
-    cumplimiento_por_bloque: item.porBloque,
-    brechas: item.brechas,
-    recomendaciones: item.recomendaciones,
-  };
-  const blob = new Blob([JSON.stringify(contenido, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `reporte-${item.empresa.replace(/\s+/g, "-").toLowerCase()}-${item.fecha.slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadReportePdf(item);
 }
