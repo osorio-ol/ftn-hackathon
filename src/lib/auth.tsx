@@ -44,6 +44,7 @@ type AuthCtx = {
   logout: () => void;
   setUser: (user: User) => void;
   refreshSession: () => Promise<void>;
+  completeOAuthLogin: (accessToken: string, expiresIn: number) => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -101,6 +102,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserState(u);
   };
 
+  const completeOAuthLogin = async (accessToken: string, expiresIn: number) => {
+    storeToken(accessToken, expiresIn);
+    const res = await fetch(`${API_URL}/api/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) {
+      clearStoredToken();
+      const data = await res.json().catch(() => ({}));
+      throw new Error(typeof data.detail === "string" ? data.detail : "No se pudo validar la sesión");
+    }
+    const u: User = await res.json();
+    persistUser(u);
+    setUserState(u);
+  };
+
   useEffect(() => {
     setUnauthorizedHandler(() => {
       clearStoredToken();
@@ -149,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ user, loading, isAuthenticated, login, register, logout, setUser, refreshSession }}
+      value={{ user, loading, isAuthenticated, login, register, logout, setUser, refreshSession, completeOAuthLogin }}
     >
       {children}
     </Ctx.Provider>
