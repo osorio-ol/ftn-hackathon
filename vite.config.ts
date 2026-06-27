@@ -17,4 +17,7 @@ export default defineConfig({
     },
   },
   base: "/",
+  nitro: {
+    preset: process.env.NITRO_PRESET || "render_com",
+  },
 });

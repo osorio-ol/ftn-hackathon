@@ -3,7 +3,7 @@ services:
     name: ftn-hackathon
     env: node
     branch: main
-    buildCommand: bun install && bun run build
+    buildCommand: bun install && NITRO_PRESET=render_com bun run build
     startCommand: node .output/server/index.mjs
     envVars:
       - key: NODE_VERSION
