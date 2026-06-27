@@ -12,3 +12,5 @@ services:
         value: render_com
       - key: VITE_API_URL
         value: https://calvaltec-backend.onrender.com
+      - key: VITE_N8N_CHAT_WEBHOOK_URL
+        value: https://smartteam2026.app.n8n.cloud/webhook/chat-assistant
