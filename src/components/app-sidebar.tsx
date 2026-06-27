@@ -45,28 +45,31 @@ export function AppSidebar() {
   const items = user ? navItemsForRole(user.role) : [];
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border/80">
+      <SidebarHeader className="border-b border-sidebar-border/60">
+        <div className="flex items-center gap-2.5 px-2 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm">
             <ShieldCheck className="h-4 w-4" />
           </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold">CAVALTEC</span>
-            <span className="text-xs text-muted-foreground">Ley 1581</span>
+          <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
+            <span className="text-sm font-bold tracking-tight">CAVALTEC</span>
+            <span className="text-[11px] text-muted-foreground">Ley 1581 · Datos personales</span>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navegación</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[11px] uppercase tracking-wider">
+            Navegación
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => {
                 const Icon = icons[item.title as keyof typeof icons] ?? LayoutDashboard;
+                const active = path === item.url || path.startsWith(`${item.url}/`);
                 return (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={path === item.url || path.startsWith(`${item.url}/`)}>
+                    <SidebarMenuButton asChild isActive={active} className="rounded-lg">
                       <Link to={item.url} className="flex items-center gap-2">
                         <Icon className="h-4 w-4" />
                         <span>{item.title}</span>
@@ -79,22 +82,27 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <div className="flex flex-col gap-2 px-2 pb-2">
+      <SidebarFooter className="border-t border-sidebar-border/60">
+        <div className="flex flex-col gap-2 px-2 py-3">
           {user && (
-            <div className="rounded-md border bg-muted/40 px-2 py-1.5 text-xs space-y-1">
-              <div className="font-medium truncate">{user.name}</div>
+            <div className="rounded-xl border border-sidebar-border/80 bg-sidebar-accent/50 px-3 py-2.5 text-xs space-y-1.5 group-data-[collapsible=icon]:hidden">
+              <div className="font-semibold truncate">{user.name}</div>
               {user.company_name && (
                 <div className="text-muted-foreground truncate">{user.company_name}</div>
               )}
-              <Badge variant="outline" className="capitalize text-[10px]">
+              <Badge variant="outline" className="capitalize text-[10px] font-normal">
                 {roleLabel(user.role)}
               </Badge>
             </div>
           )}
-          <Button variant="outline" size="sm" onClick={logout} className="justify-start">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={logout}
+            className="justify-start text-muted-foreground hover:text-foreground"
+          >
             <LogOut className="mr-2 h-4 w-4" />
-            Cerrar sesión
+            <span className="group-data-[collapsible=icon]:hidden">Cerrar sesión</span>
           </Button>
         </div>
       </SidebarFooter>

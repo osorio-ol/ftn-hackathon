@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { Loader2, Mail, Paperclip, Send, Sparkles, X } from "lucide-react";
+import { Bot, Loader2, Mail, Paperclip, Send, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   createChatSessionId,
@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { isCompanyUser } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,7 @@ function welcomeMessage(userName: string): ChatMessage {
   return {
     id: "welcome",
     role: "assistant",
-    content: `Hola${userName ? `, ${userName.split(" ")[0]}` : ""}. Soy el asistente IA de CAVALTEC. Puedo responder dudas sobre la Ley 1581, consultar diagnósticos y empresas según tus permisos, traer documentos o enviarlos al correo que indiques.`,
+    content: `Hola${userName ? `, ${userName.split(" ")[0]}` : ""}. Soy el asistente IA de CAVALTEC. Puedo ayudarte con la Ley 1581, consultar diagnósticos, explicar tu puntaje de cumplimiento o guiarte en el centro de cumplimiento.`,
     createdAt: Date.now(),
   };
 }
@@ -39,14 +40,14 @@ function suggestedPrompts(role: string | undefined): string[] {
     return [
       "¿Qué empresas tienen bajo cumplimiento?",
       "Resume el diagnóstico más reciente",
-      "Envía el último reporte a un correo",
+      "¿Cuántas evaluaciones hay registradas?",
     ];
   }
   if (isCompanyUser(role ?? "company")) {
     return [
       "¿Cuál es mi último puntaje de cumplimiento?",
       "¿Qué debo mejorar según mi diagnóstico?",
-      "Envía mi reporte a mi correo",
+      "Explícame mis derechos ARCO",
     ];
   }
   return [
@@ -87,20 +88,24 @@ function AttachmentList({ items }: { items: ChatAttachment[] }) {
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
   return (
-    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("flex gap-2", isUser ? "justify-end" : "justify-start")}>
+      {!isUser && (
+        <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Bot className="h-3.5 w-3.5" />
+        </div>
+      )}
       <div
         className={cn(
-          "max-w-[88%] rounded-2xl px-3 py-2 text-sm leading-relaxed shadow-sm",
+          "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
           isUser
             ? "rounded-br-md bg-primary text-primary-foreground"
             : "rounded-bl-md border bg-card text-foreground"
         )}
       >
         {!isUser && (
-          <div className="mb-1 flex items-center gap-1 text-[11px] font-medium text-primary">
-            <span aria-hidden>🤖</span>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-primary/80">
             Asistente IA
-          </div>
+          </p>
         )}
         <p className="whitespace-pre-wrap">{message.content}</p>
         {message.attachments?.length ? <AttachmentList items={message.attachments} /> : null}
@@ -198,22 +203,20 @@ export function AiChatWidget() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-24 right-4 z-50 flex w-[min(calc(100vw-2rem),400px)] flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200 sm:right-6">
-          <div className="flex items-center gap-2 border-b bg-primary/5 px-4 py-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xl">
-              <span aria-hidden>🤖</span>
+        <div className="fixed bottom-24 right-4 z-50 flex w-[min(calc(100vw-2rem),420px)] flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200 sm:right-6">
+          <div className="flex items-center gap-3 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-4 py-3.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Bot className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">Asistente CAVALTEC</p>
-              <p className="truncate text-xs text-muted-foreground">
-                Consultas, reportes y envío por correo
-              </p>
+              <p className="truncate text-xs text-muted-foreground">Ley 1581 · Diagnósticos · Cumplimiento</p>
             </div>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-8 w-8 shrink-0"
+              className="h-8 w-8 shrink-0 rounded-lg"
               onClick={() => setOpen(false)}
               aria-label="Cerrar chat"
             >
@@ -221,14 +224,17 @@ export function AiChatWidget() {
             </Button>
           </div>
 
-          <ScrollArea className="h-[min(52vh,420px)] px-3 py-3">
-            <div className="space-y-3 pr-2">
+          <ScrollArea className="h-[min(52vh,420px)] px-4 py-4">
+            <div className="space-y-4 pr-1">
               {messages.map((message) => (
                 <MessageBubble key={message.id} message={message} />
               ))}
               {loading && (
-                <div className="flex justify-start">
-                  <div className="rounded-2xl rounded-bl-md border bg-card px-3 py-2 text-sm text-muted-foreground">
+                <div className="flex gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
+                    <Bot className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <div className="rounded-2xl rounded-bl-md border bg-card px-3.5 py-2.5 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Pensando…
@@ -241,27 +247,27 @@ export function AiChatWidget() {
           </ScrollArea>
 
           {messages.length <= 1 && (
-            <div className="border-t px-3 py-2">
-              <p className="mb-2 flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                <Sparkles className="h-3 w-3" />
+            <div className="border-t bg-muted/20 px-4 py-3">
+              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                <Sparkles className="h-3 w-3 text-primary" />
                 Sugerencias
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {prompts.map((prompt) => (
-                  <button
+                  <Badge
                     key={prompt}
-                    type="button"
-                    className="rounded-full border bg-muted/40 px-2.5 py-1 text-left text-[11px] transition-colors hover:bg-muted"
+                    variant="secondary"
+                    className="cursor-pointer px-2.5 py-1 text-[11px] font-normal hover:bg-primary/10 hover:text-primary transition-colors"
                     onClick={() => void send(prompt)}
                   >
                     {prompt}
-                  </button>
+                  </Badge>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="border-t p-3">
+          <div className="border-t p-3.5 bg-muted/10">
             <div className="flex items-end gap-2">
               <Textarea
                 ref={textareaRef}
@@ -271,12 +277,12 @@ export function AiChatWidget() {
                 placeholder="Escribe tu pregunta… (Enter para enviar)"
                 rows={2}
                 disabled={loading}
-                className="min-h-[44px] max-h-28 resize-none rounded-xl text-sm"
+                className="min-h-[44px] max-h-28 resize-none rounded-xl border-border/80 bg-background text-sm"
               />
               <Button
                 type="button"
                 size="icon"
-                className="h-11 w-11 shrink-0 rounded-xl"
+                className="h-11 w-11 shrink-0 rounded-xl shadow-sm"
                 disabled={loading || !input.trim()}
                 onClick={() => void send(input)}
                 aria-label="Enviar mensaje"
@@ -284,9 +290,9 @@ export function AiChatWidget() {
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
             </div>
-            <p className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
+            <p className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
               <Mail className="h-3 w-3" />
-              Puedes pedir documentos o enviarlos a un correo indicándolo en el chat.
+              Puedes consultar diagnósticos y cumplimiento según tus permisos.
             </p>
           </div>
         </div>
@@ -296,13 +302,16 @@ export function AiChatWidget() {
         type="button"
         size="icon"
         aria-label={open ? "Cerrar asistente IA" : "Abrir asistente IA"}
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "fixed bottom-6 right-4 z-50 h-14 w-14 rounded-full shadow-lg transition-transform hover:scale-105 sm:right-6",
-          open && "bg-muted text-foreground hover:bg-muted"
+          "fixed bottom-6 right-4 z-50 h-14 w-14 rounded-full shadow-lg transition-all hover:scale-105 sm:right-6",
+          open
+            ? "bg-muted text-foreground hover:bg-muted"
+            : "bg-gradient-to-br from-primary to-primary/85 text-primary-foreground hover:shadow-xl"
         )}
       >
-        {open ? <X className="h-6 w-6" /> : <span className="text-2xl leading-none">🤖</span>}
+        {open ? <X className="h-5 w-5" /> : <Bot className="h-6 w-6" />}
       </Button>
     </>
   );

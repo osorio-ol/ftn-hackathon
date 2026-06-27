@@ -20,7 +20,7 @@ const features = [
 export function AuthLayout({ variant, title, subtitle, children, footer }: AuthLayoutProps) {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
-      <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary via-primary/90 to-primary/70 text-primary-foreground p-10 overflow-hidden">
+      <div className="relative hidden lg:flex flex-col justify-between bg-gradient-to-br from-primary via-primary/95 to-[oklch(0.38_0.1_195)] text-primary-foreground p-10 overflow-hidden">
         <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-white/5 blur-2xl" />
 
@@ -41,8 +41,8 @@ export function AuthLayout({ variant, title, subtitle, children, footer }: AuthL
               : "Bienvenido de nuevo"}
           </h1>
           <p className="text-primary-foreground/85 text-sm leading-relaxed">
-            Plataforma de autodiagnóstico para organizaciones que quieren conocer su nivel de
-            cumplimiento en protección de datos personales — fase de diseño.
+            Plataforma de autodiagnóstico para organizaciones que quieren conocer y mejorar su
+            nivel de cumplimiento en protección de datos personales.
           </p>
           <ul className="space-y-3">
             {features.map((f) => (

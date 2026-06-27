@@ -149,15 +149,18 @@ function Dashboard() {
   return (
     <div className="space-y-6">
       {user && isCompanyUser(user.role) && (
-        <Card className="border-primary/20">
-          <CardContent className="flex flex-col sm:flex-row items-center gap-6 py-6">
-            <div className="flex-1 space-y-2">
-              <h2 className="text-lg font-semibold">Bienvenido, {user.company_name}</h2>
-              <p className="text-sm text-muted-foreground">
-                Realiza el autodiagnóstico de cumplimiento Ley 1581 en fase de diseño y obtén
-                recomendaciones personalizadas con IA.
+        <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card to-card shadow-sm">
+          <CardContent className="flex flex-col sm:flex-row items-center gap-6 py-7">
+            <div className="flex-1 space-y-3">
+              <Badge variant="secondary" className="text-[10px] font-normal">
+                Bienvenido
+              </Badge>
+              <h2 className="text-xl font-bold tracking-tight">{user.company_name}</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Realiza el autodiagnóstico de cumplimiento Ley 1581 y obtén recomendaciones
+                personalizadas con inteligencia artificial.
               </p>
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="rounded-lg shadow-sm">
                 <Link to="/cuestionario">
                   Iniciar autodiagnóstico
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -171,16 +174,18 @@ function Dashboard() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
         {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+          <Card key={s.label} className="stat-card shadow-sm">
+            <CardContent className="pt-6 pl-5">
+              <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs text-muted-foreground">{s.label}</p>
-                  <p className="mt-1 text-2xl font-bold">{s.value}</p>
+                  <p className="text-xs font-medium text-muted-foreground">{s.label}</p>
+                  <p className="mt-1.5 text-2xl font-bold tracking-tight">{s.value}</p>
                 </div>
-                <s.icon className="h-8 w-8 text-muted-foreground/40" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary/70">
+                  <s.icon className="h-5 w-5" />
+                </div>
               </div>
             </CardContent>
           </Card>

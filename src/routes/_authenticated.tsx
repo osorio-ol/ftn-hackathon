@@ -5,7 +5,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AiChatWidget } from "@/components/chat/ai-chat-widget";
 import { useAuth } from "@/lib/auth";
 import { canAccessRoute, roleLabel } from "@/lib/permissions";
-import { Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
@@ -21,6 +22,7 @@ const titles: Record<string, string> = {
   "/perfil": "Perfil de empresa",
   "/admin": "Administración",
   "/recomendaciones": "Recomendaciones IA",
+  "/cumplimiento": "Centro de cumplimiento",
 };
 
 function AuthLayout() {
@@ -40,29 +42,60 @@ function AuthLayout() {
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 app-shell-bg">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <ShieldCheck className="h-6 w-6 animate-pulse" />
+        </div>
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Cargando CAVALTEC…</p>
       </div>
     );
   }
 
+  const pageTitle =
+    Object.entries(titles).find(([k]) => pathname === k || pathname.startsWith(`${k}/`))?.[1] ??
+    "CAVALTEC";
+
+  const initials = user.name
+    .split(" ")
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-muted/20">
+      <div className="min-h-screen flex w-full app-shell-bg">
         <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center gap-3 border-b bg-background px-4">
-            <SidebarTrigger />
-            <h1 className="text-sm font-semibold">
-              {Object.entries(titles).find(([k]) => pathname === k || pathname.startsWith(`${k}/`))?.[1] ??
-                "CAVALTEC"}
-            </h1>
-            <div className="ml-auto text-xs text-muted-foreground hidden sm:block">
-              {user.company_name ? `${user.company_name} · ` : ""}
-              {user.email} · {roleLabel(user.role)}
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/80 bg-background/85 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
+            <SidebarTrigger className="-ml-1" />
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-sm font-semibold tracking-tight">{pageTitle}</h1>
+              {user.company_name && (
+                <p className="truncate text-[11px] text-muted-foreground sm:hidden">
+                  {user.company_name}
+                </p>
+              )}
+            </div>
+            <div className="hidden sm:flex items-center gap-2">
+              {user.company_name && (
+                <span className="max-w-[180px] truncate text-xs text-muted-foreground">
+                  {user.company_name}
+                </span>
+              )}
+              <Badge variant="secondary" className="font-normal text-[10px] capitalize">
+                {roleLabel(user.role)}
+              </Badge>
+            </div>
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary"
+              title={user.email}
+            >
+              {initials}
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-6">
+          <main className="flex-1 p-4 md:p-6 lg:p-8">
             <Outlet />
           </main>
         </div>
